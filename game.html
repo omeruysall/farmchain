@@ -1,79 +1,32 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Farm-Chain Oyun</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #1f4068, #162447, #0a0d18);
-      color: #fff;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    h1 { margin-bottom: 2rem; }
-    button {
-      padding: 0.8rem 1.2rem;
-      border: none;
-      border-radius: 6px;
-      background: #7cf7b2;
-      color: #111;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover { background: #5ddc97; }
-  </style>
-  <!-- Supabase JS -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script>
-    // Supabase client
-    const supa = supabase.createClient(
-      "https://XYZ.supabase.co", // kendi Project URL'in
-      "public-anon-key"          // kendi anon public key'in
-    );
-
-    // Kullanıcı farm verisini yükle
-    async function loadFarm(){
-      const { data: { user } } = await supa.auth.getUser();
-      if(!user){
-        // giriş yapılmamış → index.html'e at
-        window.location.href = "index.html";
-        return;
-      }
-
-      // farms tablosundan çiftlik adı çek
-      const { data, error } = await supa
-        .from("farms")
-        .select("farm_name")
-        .eq("user_id", user.id)
-        .single();
-
-      if(error){ 
-        document.getElementById("farmTitle").innerText = "Çiftlik bulunamadı 😢";
-        return;
-      }
-
-      document.getElementById("farmTitle").innerText =
-        "Hoşgeldin " + data.farm_name + "!";
-    }
-
-    // Çıkış
-    async function logout(){
-      await supa.auth.signOut();
-      window.location.href = "index.html";
-    }
-
-    document.addEventListener("DOMContentLoaded", loadFarm);
-  </script>
-</head>
 <body>
-  <h1 id="farmTitle">Yükleniyor...</h1>
-  <button onclick="logout()">Çıkış Yap</button>
+  <!-- Üst Bar -->
+  <header>
+    <div class="logo">🌾 Farm-Chain</div>
+    <div id="farmTitle">Hoşgeldin...</div>
+    <div class="user-info">
+      <span id="balance">💰 Yükleniyor...</span>
+      <button onclick="logout()">Çıkış</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <!-- Sol Menü -->
+    <aside>
+      <button onclick="showPanel('farm')">🌱 Çiftlik</button>
+      <button onclick="showPanel('market')">🛒 Market</button>
+      <button onclick="showPanel('crypto')">⚡ Kripto</button>
+      <button onclick="showPanel('profile')">👤 Profil</button>
+    </aside>
+
+    <!-- Orta Panel -->
+    <main id="panelContent">
+      <h2>Oyun Yükleniyor...</h2>
+    </main>
+
+    <!-- Sağ Alt Görev Kutusu -->
+    <div id="questBox">
+      <h3>Tutorial</h3>
+      <p>Adım 1: Tarla satın al</p>
+    </div>
+  </div>
 </body>
-</html>

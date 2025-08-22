@@ -1,21 +1,79 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Farm‑Chain — Demo</title>
-<style>
-  html,body{height:100%} body{margin:0;background:#000;color:#9aa;display:grid;place-items:center;font:16px/1.4 system-ui, -apple-system, Segoe UI, Roboto, Arial}
-  .box{text-align:center}
-  h1{color:#fff;margin:.2rem 0} p{color:#9aa;margin:.2rem 0}
-  a{color:#8ef;text-decoration:underline}
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Farm-Chain Oyun</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #1f4068, #162447, #0a0d18);
+      color: #fff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    h1 { margin-bottom: 2rem; }
+    button {
+      padding: 0.8rem 1.2rem;
+      border: none;
+      border-radius: 6px;
+      background: #7cf7b2;
+      color: #111;
+      font-weight: bold;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+    button:hover { background: #5ddc97; }
+  </style>
+  <!-- Supabase JS -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase client
+    const supa = supabase.createClient(
+      "https://XYZ.supabase.co", // kendi Project URL'in
+      "public-anon-key"          // kendi anon public key'in
+    );
+
+    // Kullanıcı farm verisini yükle
+    async function loadFarm(){
+      const { data: { user } } = await supa.auth.getUser();
+      if(!user){
+        // giriş yapılmamış → index.html'e at
+        window.location.href = "index.html";
+        return;
+      }
+
+      // farms tablosundan çiftlik adı çek
+      const { data, error } = await supa
+        .from("farms")
+        .select("farm_name")
+        .eq("user_id", user.id)
+        .single();
+
+      if(error){ 
+        document.getElementById("farmTitle").innerText = "Çiftlik bulunamadı 😢";
+        return;
+      }
+
+      document.getElementById("farmTitle").innerText =
+        "Hoşgeldin " + data.farm_name + "!";
+    }
+
+    // Çıkış
+    async function logout(){
+      await supa.auth.signOut();
+      window.location.href = "index.html";
+    }
+
+    document.addEventListener("DOMContentLoaded", loadFarm);
+  </script>
 </head>
 <body>
-  <div class="box">
-    <h1>Demo (Yakında)</h1>
-    <p>Oyun ekranı burada olacak. Bu sayfa şimdilik yer tutucu.</p>
-    <p><a href="./">← Ana sayfaya dön</a></p>
-  </div>
+  <h1 id="farmTitle">Yükleniyor...</h1>
+  <button onclick="logout()">Çıkış Yap</button>
 </body>
 </html>

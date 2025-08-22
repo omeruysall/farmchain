@@ -1,124 +1,55 @@
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Farm-Chain</title>
-  <style>
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0a0d18, #162447, #1f4068);
-      color: #fff;
-      height: 100vh;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .card {
-      background: rgba(255,255,255,0.05);
-      padding: 2rem;
-      border-radius: 12px;
-      width: 320px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.4);
-    }
-    h1 { text-align:center; margin-bottom: 1.5rem; }
-    input {
-      width: 100%;
-      padding: 0.7rem;
-      margin: 0.4rem 0;
-      border-radius: 6px;
-      border: none;
-    }
-    button {
-      width: 100%;
-      padding: 0.8rem;
-      margin-top: 0.8rem;
-      border: none;
-      border-radius: 6px;
-      background: #7cf7b2;
-      color: #111;
-      font-weight: bold;
-      cursor: pointer;
-      transition: 0.3s;
-    }
-    button:hover { background: #5ddc97; }
-    .switch { text-align:center; margin-top:1rem; cursor:pointer; color:#79d3ff; }
-  </style>
-  <!-- Supabase JS -->
-  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <script>
-    // Supabase client oluştur
-    const supa = supabase.createClient(
-      "https://gukdmxepdgwrwniectnq.supabase.co", // senin Supabase Project URL
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"          // senin public anon key
-    );
+<!-- Senin index.html tasarımın buraya kadar aynı kalsın -->
 
-    // Kayıt ol
-    async function signup(){
-      const farm = document.getElementById("farm").value;
-      const email = document.getElementById("email").value;
-      const pass = document.getElementById("pass").value;
+<!-- Supabase Auth scriptleri -->
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  // Supabase client
+  const supa = supabase.createClient(
+    "https://gukdmxepdgwrwniectnq.supabase.co",   // Supabase Project URL
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"            // Supabase anon key
+  );
 
-      const { data, error } = await supa.auth.signUp({ email, password: pass });
-      if(error){ alert(error.message); return; }
+  // Kayıt ol
+  async function signup(farmName, email, password){
+    const { data, error } = await supa.auth.signUp({
+      email: email,
+      password: password
+    });
+    if(error){ alert("Kayıt başarısız: " + error.message); return; }
 
-      // çiftlik tablosuna kayıt
-      await supa.from("farms").insert({
-        user_id: data.user.id,
-        farm_name: farm
-      });
+    // çiftlik tablosuna kaydet
+    await supa.from("farms").insert({
+      user_id: data.user.id,
+      farm_name: farmName
+    });
 
-      alert("Kayıt başarılı! Oyuna yönlendiriliyorsunuz...");
+    // cüzdan tablosuna başlangıç bakiyesi ekle (1000 FARM)
+    await supa.from("wallets").insert({
+      user_id: data.user.id,
+      balance: 1000
+    });
+
+    alert("Kayıt başarılı! Oyuna yönlendiriliyorsunuz...");
+    window.location.href = "game.html";
+  }
+
+  // Giriş yap
+  async function login(email, password){
+    const { error } = await supa.auth.signInWithPassword({
+      email: email,
+      password: password
+    });
+    if(error){ alert("Giriş başarısız: " + error.message); return; }
+
+    window.location.href = "game.html";
+  }
+
+  // Oturum kontrolü (beni hatırla)
+  async function checkSession(){
+    const { data: { user } } = await supa.auth.getUser();
+    if(user){
       window.location.href = "game.html";
     }
-
-    // Giriş yap
-    async function login(){
-      const email = document.getElementById("emailLogin").value;
-      const pass = document.getElementById("passLogin").value;
-
-      const { error } = await supa.auth.signInWithPassword({ email, password: pass });
-      if(error){ alert(error.message); return; }
-
-      window.location.href = "game.html";
-    }
-
-    // Oturum kontrolü (beni hatırla)
-    async function checkSession(){
-      const { data: { user } } = await supa.auth.getUser();
-      if(user){
-        window.location.href = "game.html";
-      }
-    }
-    document.addEventListener("DOMContentLoaded", checkSession);
-  </script>
-</head>
-<body>
-  <div class="card" id="signupCard">
-    <h1>Farm-Chain Hoşgeldiniz</h1>
-    <input type="text" id="farm" placeholder="Çiftlik Adı" />
-    <input type="email" id="email" placeholder="E-posta" />
-    <input type="password" id="pass" placeholder="Şifre" />
-    <button onclick="signup()">Kayıt Ol</button>
-    <div class="switch" onclick="toggleCards()">Zaten hesabın var mı? Giriş Yap</div>
-  </div>
-
-  <div class="card" id="loginCard" style="display:none">
-    <h1>Çiftliğe Giriş</h1>
-    <input type="email" id="emailLogin" placeholder="E-posta" />
-    <input type="password" id="passLogin" placeholder="Şifre" />
-    <button onclick="login()">Giriş Yap</button>
-    <div class="switch" onclick="toggleCards()">Hesabın yok mu? Kayıt Ol</div>
-  </div>
-
-  <script>
-    function toggleCards(){
-      document.getElementById("signupCard").style.display =
-        document.getElementById("signupCard").style.display === "none" ? "block" : "none";
-      document.getElementById("loginCard").style.display =
-        document.getElementById("loginCard").style.display === "none" ? "block" : "none";
-    }
-  </script>
-</body>
-</html>
+  }
+  document.addEventListener("DOMContentLoaded", checkSession);
+</script>

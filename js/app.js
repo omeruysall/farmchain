@@ -87,6 +87,13 @@ function renderCrypto(){
 // (Opsiyonel) dış JSON'dan veri çekmek istersen:
 /*
 fetch('data/products.json')
+[
+  { "name": "Organik Zeytin", "tag": "Aydın · Erken Hasat", "price": "₺220/lt", "stock": 38 },
+  { "name": "Çiğ Süt", "tag": "Balıkesir · Günlük", "price": "₺35/lt", "stock": 120 },
+  { "name": "Serbest Gezen Yumurta", "tag": "Manisa · XL", "price": "₺90/10'lu", "stock": 64 },
+  { "name": "Lavanta Balı", "tag": "Isparta · 2025", "price": "₺360/500g", "stock": 42 }
+]
+
   .then(r => r.json())
   .then(list => { PRODUCTS.splice(0, PRODUCTS.length, ...list); renderMarket(); });
 */

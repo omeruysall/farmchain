@@ -64,7 +64,7 @@
   .callout{margin-top:18px;padding:18px;border-radius:22px;border:1px solid var(--border);background:linear-gradient(135deg, rgba(255,255,255,.06), rgba(255,255,255,0))}
   .hide{display:none!important}
 
-  /* Modal */
+  /* Modals */
   .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,.6);backdrop-filter:blur(2px);display:none;align-items:center;justify-content:center;z-index:50}
   .modal{width:min(520px,92vw);border-radius:20px;border:1px solid var(--border);background:rgba(15,18,24,.92);box-shadow:0 20px 60px rgba(0,0,0,.5);padding:20px}
   .modal h3{margin:0 0 10px}
@@ -75,6 +75,7 @@
   .helper{font-size:12px;color:var(--muted)}
   .checkbox{display:flex;align-items:center;gap:8px}
   .err{color:#ffb4b4;font-size:13px;min-height:18px}
+  .ok{color:#b8ffda;font-size:13px;min-height:18px}
 </style>
 </head>
 <body>
@@ -133,7 +134,7 @@
         </div>
       </section>
 
-      <!-- MARKET -->
+      <!-- MARKET (örnek içerik) -->
       <section id="view-market" class="grid">
         <article class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -172,7 +173,7 @@
         </article>
       </section>
 
-      <!-- KRİPTO -->
+      <!-- KRİPTO (örnek içerik) -->
       <section id="view-crypto" class="grid hide">
         <article class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;gap:8px">
@@ -191,7 +192,6 @@
         </article>
       </section>
 
-      <!-- Bilgilendirme -->
       <section class="callout">
         <h3 style="margin:.2rem 0 .3rem;font-size:18px">Çiftlikten Sofraya — Doğrudan</h3>
         <p style="margin:0;color:var(--muted)">Sipariş onayında zincir üstü makbuzun ve sevkiyat NFT’n hazırlanır.</p>
@@ -204,7 +204,7 @@
     <!-- Signup -->
     <div class="modal hide" id="signupModal" role="dialog" aria-modal="true">
       <h3>Çiftliğine isim ver</h3>
-      <p class="helper">Kayıt sonrası otomatik oyuna yönlendireceğiz.</p>
+      <p class="helper">Kayıt sonrası e‑postana bir doğrulama linki gönderilecektir.</p>
       <div class="field">
         <label>Çiftlik Adı</label>
         <input type="text" id="suFarm" placeholder="Örn: Uysal Çiftliği" />
@@ -218,6 +218,7 @@
         <input type="password" id="suPass" placeholder="••••••••" />
       </div>
       <label class="checkbox"><input type="checkbox" id="suRemember" /> Beni hatırla</label>
+      <div class="ok" id="suOk"></div>
       <div class="err" id="suErr"></div>
       <div class="modal-actions">
         <button class="btn" id="suCancel">İptal</button>
@@ -238,6 +239,7 @@
         <input type="password" id="liPass" placeholder="••••••••" />
       </div>
       <label class="checkbox"><input type="checkbox" id="liRemember" /> Beni hatırla</label>
+      <div class="ok" id="liOk"></div>
       <div class="err" id="liErr"></div>
       <div class="modal-actions">
         <button class="btn" id="liCancel">İptal</button>
@@ -250,13 +252,14 @@
   <!-- Supabase JS -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase client
+    // === Ayarlar ===
+    const SITE_URL = 'https://omeruysall.github.io/farmchain'; // ← kendi siten
     const supa = supabase.createClient(
-      "https://gukdmxepdgwrwniectnq.supabase.co",   // Supabase Project URL
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"            // Supabase anon key
+      'https://gukdmxepdgwrwniectnq.supabase.co',   // ← Project URL
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU'            // ← anon public key
     );
 
-    // Sekmeler (varsa ileride kullanırsın)
+    // === UI: Sekmeler ===
     const tabMarketBtn = document.getElementById('tab-market');
     const tabCryptoBtn = document.getElementById('tab-crypto');
     const badgeMarket = document.getElementById('badge-market');
@@ -277,7 +280,7 @@
     badgeMarket.onclick = () => setTab('market');
     badgeCrypto.onclick = () => setTab('crypto');
 
-    // Auth Modals
+    // === Auth Modals ===
     const enterBtn = document.getElementById('enterBtn');
     const enterBtnText = document.getElementById('enterBtnText');
     const welcomeTitle = document.getElementById('welcomeTitle');
@@ -288,20 +291,24 @@
     function openSignup(){ backdrop.style.display='flex'; signupModal.classList.remove('hide'); loginModal.classList.add('hide'); }
     function openLogin(){  backdrop.style.display='flex'; loginModal.classList.remove('hide');  signupModal.classList.add('hide'); }
     function closeModals(){ backdrop.style.display='none'; signupModal.classList.add('hide'); loginModal.classList.add('hide'); }
+    document.getElementById('gotoLogin').onclick = openLogin;
+    document.getElementById('gotoSignup').onclick = openSignup;
+    document.getElementById('suCancel').onclick = closeModals;
+    document.getElementById('liCancel').onclick = closeModals;
+    backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) closeModals(); });
 
-    // Oturum kontrolü (beni hatırla)
-    async function checkSession(){
+    // === Oturum kontrolü (görsel güncelleme) ===
+    async function initSessionUI(){
       const { data: { user } } = await supa.auth.getUser();
       if(user){
-        // UI güncelle
         enterBtnText.textContent = 'Çiftliğe Giriş Yap';
         try{
           const { data } = await supa.from('farms').select('farm_name').eq('user_id', user.id).single();
           if(data?.farm_name){ welcomeTitle.textContent = data.farm_name + ' • Hoşgeldiniz'; }
-        }catch(e){}
+        }catch{}
       }
     }
-    document.addEventListener('DOMContentLoaded', checkSession);
+    document.addEventListener('DOMContentLoaded', initSessionUI);
 
     // Çiftliğe Giriş butonu → kayıt mı giriş mi?
     enterBtn.addEventListener('click', (e)=>{
@@ -311,47 +318,59 @@
       });
     });
 
-    // Modal bağlantıları & kapama
-    document.getElementById('gotoLogin').onclick = openLogin;
-    document.getElementById('gotoSignup').onclick = openSignup;
-    document.getElementById('suCancel').onclick = closeModals;
-    document.getElementById('liCancel').onclick = closeModals;
-    backdrop.addEventListener('click', (e)=>{ if(e.target===backdrop) closeModals(); });
-
-    // Kayıt ol
+    // === KAYIT ===
     document.getElementById('suSubmit').onclick = async () => {
       const farmName = document.getElementById('suFarm').value.trim();
       const email = document.getElementById('suEmail').value.trim();
       const password = document.getElementById('suPass').value;
-      const remember = document.getElementById('suRemember').checked;
+      const remember = document.getElementById('suRemember').checked; // Supabase otomatik yönetir
+      const ok = document.getElementById('suOk'); ok.textContent='';
       const err = document.getElementById('suErr'); err.textContent='';
 
       if(!farmName || !email || !password){ err.textContent='Lütfen tüm alanları doldur.'; return; }
 
-      const { data, error } = await supa.auth.signUp({ email, password });
+      // Email doğrulama açık → redirect URL belirt
+      const { data, error } = await supa.auth.signUp({
+        email, password,
+        options: { emailRedirectTo: `${SITE_URL}/game.html` }
+      });
       if(error){ err.textContent = error.message; return; }
 
-      try{
-        await supa.from('farms').insert({ user_id: data.user.id, farm_name: farmName });
-      }catch(e){ /* tablo yoksa/migration eksikse burada hata alırsın */ }
+      // Farm ve (varsa) cüzdan kaydı
+      try{ await supa.from('farms').insert({ user_id: data.user.id, farm_name: farmName }); }catch{}
+      try{ await supa.from('wallets').insert({ user_id: data.user.id, balance: 1000 }); }catch{}
 
-      try{
-        await supa.from('wallets').insert({ user_id: data.user.id, balance: 1000 });
-      }catch(e){ /* wallets tablosu yoksa atlanır; tabloyu kurmanı öneririm */ }
-
-      // “remember” Supabase tarafından otomatik yönetilir (refresh token)
+      // Doğrulama açıksa session olmayacaktır
+      if(!data.session){
+        ok.textContent = 'E‑posta doğrulama linki gönderildi. Lütfen onaylayıp tekrar giriş yap.';
+        return;
+      }
+      // (Doğrulama kapalı olsaydı) direkt oyuna
       window.location.href = 'game.html';
     };
 
-    // Giriş yap
+    // === GİRİŞ ===
     document.getElementById('liSubmit').onclick = async () => {
       const email = document.getElementById('liEmail').value.trim();
       const password = document.getElementById('liPass').value;
+      const ok = document.getElementById('liOk'); ok.textContent='';
       const err = document.getElementById('liErr'); err.textContent='';
 
       const { error } = await supa.auth.signInWithPassword({ email, password });
-      if(error){ err.textContent = error.message; return; }
-
+      if(error){
+        const msg = error.message.toLowerCase();
+        if(msg.includes('email not confirmed') || msg.includes('confirm')) {
+          err.innerHTML = 'E‑posta doğrulanmamış. <button id="resend" class="btn" style="padding:.2rem .5rem;margin-left:6px">Doğrulama mailini tekrar gönder</button>';
+          document.getElementById('resend').onclick = async () => {
+            await supa.auth.resend({ type: 'signup', email });
+            ok.textContent = 'Tekrar gönderildi. Gelen kutunu / spam klasörünü kontrol et.';
+            err.textContent = '';
+          };
+        } else {
+          err.textContent = error.message;
+        }
+        return;
+      }
       window.location.href = 'game.html';
     };
   </script>

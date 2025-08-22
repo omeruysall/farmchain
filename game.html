@@ -1,62 +1,68 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Farm‑Chain • Oyun</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <meta charset="UTF-8">
+  <title>FarmChain – Oyun</title>
   <style>
-    :root { --bg:#0b1018; --panel:#121926; --border:rgba(255,255,255,.12); --ink:#e9eef3; }
-    *{box-sizing:border-box} html,body{height:100%}
-    body{
-      margin:0; font-family:"Inter",system-ui,Segoe UI,Roboto,Arial,sans-serif;
-      color:var(--ink); background:radial-gradient(1000px 600px at 15% -10%, rgba(52,211,153,.15), transparent 60%),
-                        radial-gradient(900px 600px at 90% 120%, rgba(122,162,255,.15), transparent 60%),
-                        var(--bg);
+    /* Arka plan ve temel stiller */
+    body {
+      margin: 0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, "Apple Color Emoji","Segoe UI Emoji";
+      color: #e9eef3;
+      background: #0a0d18;  /* Index ile aynı arka plan */
+      overflow-x: hidden;
     }
-    header{
-      display:flex; gap:16px; align-items:center; justify-content:center;
-      margin:20px auto; color:#e9eef3; padding:0 16px; flex-wrap:wrap;
+    button {
+      border: 1px solid rgba(255,255,255,.2);
+      background: transparent;
+      border-radius: 10px;
+      color: #e9eef3;
+      padding: .45rem .7rem;
+      cursor: pointer;
     }
-    .pill{padding:.35rem .6rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.04)}
-    .btn{border:1px solid var(--border);background:transparent;border-radius:12px;color:#e9eef3;
-         padding:.5rem .8rem;cursor:pointer;transition:.15s}
-    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.05)}
-    main{max-width:980px;margin:0 auto;padding:0 16px 32px}
-    .card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px}
-    table{width:100%;border-collapse:collapse;color:#dbe4f3}
-    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
-    h2,h3{margin:.2rem 0}
-    .row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+    button:hover {
+      background: rgba(255,255,255,.08);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      color: #dbe4f3;
+    }
+    th, td {
+      padding: 8px;
+      border-bottom: 1px solid rgba(255,255,255,.08);
+    }
+    th {
+      text-align: left;
+    }
   </style>
 </head>
-<body>
-  <!-- Üst bar -->
-  <header>
+<body onload="loadFarm()">
+
+  <!-- Üst kısım -->
+  <header style="display:flex;gap:16px;align-items:center;justify-content:center;margin:20px auto;">
     <h2 id="farmTitle" style="margin:0">Yükleniyor…</h2>
-    <span id="balance" class="pill">💰 —</span>
-    <button class="btn" onclick="logout()">Çıkış</button>
+    <span id="balance" style="padding:.35rem .6rem;border:1px solid rgba(255,255,255,.15);border-radius:10px;">💰 —</span>
+    <button onclick="logout()">Çıkış</button>
   </header>
 
   <!-- İçerik -->
-  <main>
-    <section class="card">
-      <h3>🌱 Envanter</h3>
-      <div class="row">
-        <button id="btnAddSeed" class="btn">+ Tohum Ekle</button>
-        <button id="btnPlant" class="btn">🌾 Ekim Yap (Demo 10sn)</button>
+  <main style="max-width:980px;margin:0 auto;padding:0 16px">
+    <section>
+      <h3 style="margin:.2rem 0 0.6rem">🌱 Envanter</h3>
+      <div style="display:flex;gap:8px;margin-bottom:10px">
+        <button id="btnAddSeed">+ Tohum Ekle</button>
+        <button id="btnPlant">🌾 Ekim Yap (Demo 10sn)</button>
       </div>
-
       <table id="invTable">
         <thead>
           <tr>
-            <th style="text-align:left">Ürün</th>
+            <th>Ürün</th>
             <th style="text-align:right">Miktar</th>
           </tr>
         </thead>
         <tbody id="invBody"></tbody>
       </table>
-
       <div id="status" style="margin-top:10px;color:#9fc"></div>
     </section>
   </main>
@@ -64,29 +70,46 @@
   <!-- Supabase -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
   <script>
-    // Supabase client
     const supa = supabase.createClient(
-      "https://gukdmxepdgwrwniectnq.supabase.co",    // ← Project URL
-      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"             // ← anon public key
+      "https://gukdmxepdgwrwniectnq.supabase.co",
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"
     );
 
-    // Oturum açılmadıysa index'e gönder
-    async function ensureSession(){
-      const { data: { user } } = await supa.auth.getUser();
-      if(!user) window.location.href = "index.html";
-      return user;
+    // Cüzdan + envanter yükle
+    async function loadWalletAndInv(userId){
+      // Bakiye
+      const w = await supa.from('wallets').select('balance').eq('user_id', userId).single();
+      document.getElementById('balance').textContent = `💰 ${Number(w.data?.balance ?? 0)} $FARM`;
+
+      // Envanter
+      const inv = await supa.from('inventory').select('item_name, amount').eq('user_id', userId).order('item_name');
+      const body = document.getElementById('invBody');
+      body.innerHTML = '';
+      (inv.data || []).forEach(row=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${row.item_name}</td>
+                        <td style="text-align:right">${row.amount}</td>`;
+        body.appendChild(tr);
+      });
     }
 
-    // Çıkış
-    async function logout(){
-      await supa.auth.signOut();
-      window.location.href = "index.html";
+    // Ekim demo: 10sn sonra 1 "buğday" ekle
+    async function plantDemo(userId){
+      const status = document.getElementById('status');
+      status.textContent = 'Ekim başladı… 10sn sonra hasat edilecek.';
+      await new Promise(r=>setTimeout(r, 10000));
+      await addItem(userId, 'bugday', 1);
+      status.textContent = 'Hasat tamam! Envantere 1 buğday eklendi.';
+      loadWalletAndInv(userId);
     }
 
-    // Envanterde ürün ekle (upsert mantığı)
+    // Envantere ürün ekle (upsert)
     async function addItem(userId, name, amount){
       const { data } = await supa.from('inventory')
-        .select('amount').eq('user_id', userId).eq('item_name', name).single();
+        .select('amount')
+        .eq('user_id', userId)
+        .eq('item_name', name)
+        .single();
 
       if(data){
         await supa.from('inventory')
@@ -98,43 +121,13 @@
       }
     }
 
-    // Bakiye + Envanter yükle
-    async function loadWalletAndInv(userId){
-      // Bakiye
-      const w = await supa.from('wallets').select('balance').eq('user_id', userId).single();
-      document.getElementById('balance').textContent =
-        `💰 ${Number(w.data?.balance ?? 0)} $FARM`;
-
-      // Envanter
-      const inv = await supa.from('inventory')
-        .select('item_name, amount').eq('user_id', userId).order('item_name');
-
-      const body = document.getElementById('invBody');
-      body.innerHTML = '';
-      (inv.data || []).forEach(row=>{
-        const tr = document.createElement('tr');
-        tr.innerHTML =
-          `<td>${row.item_name}</td><td style="text-align:right">${row.amount}</td>`;
-        body.appendChild(tr);
-      });
-    }
-
-    // 10sn ekim demosu
-    async function plantDemo(userId){
-      const status = document.getElementById('status');
-      status.textContent = 'Ekim başladı… 10sn sonra hasat edilecek.';
-      await new Promise(r=>setTimeout(r, 10000));
-      await addItem(userId, 'bugday', 1);
-      status.textContent = 'Hasat tamam! Envantere 1 buğday eklendi.';
-      loadWalletAndInv(userId);
-    }
-
-    // Sayfa açılışında her şeyi yükle
+    // Ana yükleme
     async function loadFarm(){
-      const user = await ensureSession();
-      // Çiftlik adı
+      const { data: { user } } = await supa.auth.getUser();
+      if(!user){ window.location.href = "index.html"; return; }
+
       const farm = await supa.from('farms').select('farm_name').eq('user_id', user.id).single();
-      document.getElementById('farmTitle').textContent =
+      document.getElementById("farmTitle").innerText =
         farm.data?.farm_name ? `Hoşgeldin ${farm.data.farm_name}!` : 'Hoşgeldin!';
 
       await loadWalletAndInv(user.id);
@@ -147,7 +140,9 @@
       document.getElementById('btnPlant').onclick = ()=> plantDemo(user.id);
     }
 
-    document.addEventListener('DOMContentLoaded', loadFarm);
+    function logout(){
+      supa.auth.signOut().then(()=> window.location.href="index.html");
+    }
   </script>
 </body>
 </html>

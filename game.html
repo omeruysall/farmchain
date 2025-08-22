@@ -1,32 +1,153 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Farm‑Chain • Oyun</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --bg:#0b1018; --panel:#121926; --border:rgba(255,255,255,.12); --ink:#e9eef3; }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0; font-family:"Inter",system-ui,Segoe UI,Roboto,Arial,sans-serif;
+      color:var(--ink); background:radial-gradient(1000px 600px at 15% -10%, rgba(52,211,153,.15), transparent 60%),
+                        radial-gradient(900px 600px at 90% 120%, rgba(122,162,255,.15), transparent 60%),
+                        var(--bg);
+    }
+    header{
+      display:flex; gap:16px; align-items:center; justify-content:center;
+      margin:20px auto; color:#e9eef3; padding:0 16px; flex-wrap:wrap;
+    }
+    .pill{padding:.35rem .6rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.04)}
+    .btn{border:1px solid var(--border);background:transparent;border-radius:12px;color:#e9eef3;
+         padding:.5rem .8rem;cursor:pointer;transition:.15s}
+    .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.05)}
+    main{max-width:980px;margin:0 auto;padding:0 16px 32px}
+    .card{background:rgba(255,255,255,.04);border:1px solid var(--border);border-radius:16px;padding:16px}
+    table{width:100%;border-collapse:collapse;color:#dbe4f3}
+    th,td{padding:10px;border-bottom:1px solid rgba(255,255,255,.12)}
+    h2,h3{margin:.2rem 0}
+    .row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  </style>
+</head>
 <body>
-  <!-- Üst Bar -->
+  <!-- Üst bar -->
   <header>
-    <div class="logo">🌾 Farm-Chain</div>
-    <div id="farmTitle">Hoşgeldin...</div>
-    <div class="user-info">
-      <span id="balance">💰 Yükleniyor...</span>
-      <button onclick="logout()">Çıkış</button>
-    </div>
+    <h2 id="farmTitle" style="margin:0">Yükleniyor…</h2>
+    <span id="balance" class="pill">💰 —</span>
+    <button class="btn" onclick="logout()">Çıkış</button>
   </header>
 
-  <div class="layout">
-    <!-- Sol Menü -->
-    <aside>
-      <button onclick="showPanel('farm')">🌱 Çiftlik</button>
-      <button onclick="showPanel('market')">🛒 Market</button>
-      <button onclick="showPanel('crypto')">⚡ Kripto</button>
-      <button onclick="showPanel('profile')">👤 Profil</button>
-    </aside>
+  <!-- İçerik -->
+  <main>
+    <section class="card">
+      <h3>🌱 Envanter</h3>
+      <div class="row">
+        <button id="btnAddSeed" class="btn">+ Tohum Ekle</button>
+        <button id="btnPlant" class="btn">🌾 Ekim Yap (Demo 10sn)</button>
+      </div>
 
-    <!-- Orta Panel -->
-    <main id="panelContent">
-      <h2>Oyun Yükleniyor...</h2>
-    </main>
+      <table id="invTable">
+        <thead>
+          <tr>
+            <th style="text-align:left">Ürün</th>
+            <th style="text-align:right">Miktar</th>
+          </tr>
+        </thead>
+        <tbody id="invBody"></tbody>
+      </table>
 
-    <!-- Sağ Alt Görev Kutusu -->
-    <div id="questBox">
-      <h3>Tutorial</h3>
-      <p>Adım 1: Tarla satın al</p>
-    </div>
-  </div>
+      <div id="status" style="margin-top:10px;color:#9fc"></div>
+    </section>
+  </main>
+
+  <!-- Supabase -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // Supabase client
+    const supa = supabase.createClient(
+      "https://gukdmxepdgwrwniectnq.supabase.co",    // ← Project URL
+      "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU"             // ← anon public key
+    );
+
+    // Oturum açılmadıysa index'e gönder
+    async function ensureSession(){
+      const { data: { user } } = await supa.auth.getUser();
+      if(!user) window.location.href = "index.html";
+      return user;
+    }
+
+    // Çıkış
+    async function logout(){
+      await supa.auth.signOut();
+      window.location.href = "index.html";
+    }
+
+    // Envanterde ürün ekle (upsert mantığı)
+    async function addItem(userId, name, amount){
+      const { data } = await supa.from('inventory')
+        .select('amount').eq('user_id', userId).eq('item_name', name).single();
+
+      if(data){
+        await supa.from('inventory')
+          .update({ amount: (data.amount || 0) + amount })
+          .eq('user_id', userId).eq('item_name', name);
+      } else {
+        await supa.from('inventory')
+          .insert({ user_id: userId, item_name: name, amount });
+      }
+    }
+
+    // Bakiye + Envanter yükle
+    async function loadWalletAndInv(userId){
+      // Bakiye
+      const w = await supa.from('wallets').select('balance').eq('user_id', userId).single();
+      document.getElementById('balance').textContent =
+        `💰 ${Number(w.data?.balance ?? 0)} $FARM`;
+
+      // Envanter
+      const inv = await supa.from('inventory')
+        .select('item_name, amount').eq('user_id', userId).order('item_name');
+
+      const body = document.getElementById('invBody');
+      body.innerHTML = '';
+      (inv.data || []).forEach(row=>{
+        const tr = document.createElement('tr');
+        tr.innerHTML =
+          `<td>${row.item_name}</td><td style="text-align:right">${row.amount}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    // 10sn ekim demosu
+    async function plantDemo(userId){
+      const status = document.getElementById('status');
+      status.textContent = 'Ekim başladı… 10sn sonra hasat edilecek.';
+      await new Promise(r=>setTimeout(r, 10000));
+      await addItem(userId, 'bugday', 1);
+      status.textContent = 'Hasat tamam! Envantere 1 buğday eklendi.';
+      loadWalletAndInv(userId);
+    }
+
+    // Sayfa açılışında her şeyi yükle
+    async function loadFarm(){
+      const user = await ensureSession();
+      // Çiftlik adı
+      const farm = await supa.from('farms').select('farm_name').eq('user_id', user.id).single();
+      document.getElementById('farmTitle').textContent =
+        farm.data?.farm_name ? `Hoşgeldin ${farm.data.farm_name}!` : 'Hoşgeldin!';
+
+      await loadWalletAndInv(user.id);
+
+      // Butonlar
+      document.getElementById('btnAddSeed').onclick = async ()=>{
+        await addItem(user.id, 'tohum', 1);
+        loadWalletAndInv(user.id);
+      };
+      document.getElementById('btnPlant').onclick = ()=> plantDemo(user.id);
+    }
+
+    document.addEventListener('DOMContentLoaded', loadFarm);
+  </script>
 </body>
+</html>

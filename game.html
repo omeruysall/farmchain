@@ -8,13 +8,17 @@
 <style>
   :root{
     --bg:#0a0d18; --ink:#e9eef3; --muted:#a8b1c4; --border:rgba(255,255,255,.12);
-    --glass:rgba(255,255,255,.06); --accent:#34d399; --accent2:#7aa2ff;
-    --quest-h: 220px; /* tutorial kutusu yüksekliği (padding için) */
+    --accent:#34d399; --accent2:#7aa2ff;
+    --quest-h: 0px; /* tutorial kutusu boşluğu (JS ile ayarlanır) */
   }
   *{box-sizing:border-box} html,body{height:100%}
   body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.6 "Inter",system-ui,Segoe UI,Roboto,Arial}
+
+  /* Layout */
   .app{display:grid;grid-template-columns:260px 1fr;min-height:100svh}
-  @media (max-width:900px){.app{grid-template-columns:1fr} .sidebar{position:sticky;top:0;z-index:5}}
+  @media (max-width:900px){.app{grid-template-columns:1fr}}
+
+  /* Sidebar */
   .sidebar{padding:16px;border-right:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03))}
   .brand{display:flex;gap:12px;align-items:center;margin-bottom:12px}
   .logo{width:40px;height:40px;border-radius:12px;display:grid;place-items:center;color:#05130f;background:linear-gradient(135deg, var(--accent), #14b8a6)}
@@ -22,28 +26,41 @@
   .nav button,.nav a{padding:10px 12px;border-radius:12px;border:1px solid transparent;background:transparent;color:#dbe4f3;text-align:left;cursor:pointer}
   .nav button:hover,.nav a:hover{background:rgba(255,255,255,.06)}
   .nav .active{background:rgba(255,255,255,.1);border-color:var(--border)}
-  header.top{display:flex;gap:12px;align-items:center;justify-content:center;padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:rgba(10,13,24,.8);backdrop-filter:blur(10px);z-index:3}
+
+  /* Header (sticky değil) */
+  header.top{display:flex;gap:12px;align-items:center;justify-content:center;padding:16px;border-bottom:1px solid var(--border);background:rgba(10,13,24,.8);backdrop-filter:blur(10px);}
+  @media (max-width:900px){header.top{position:static;top:auto;z-index:auto;background:transparent;backdrop-filter:none;}}
+  h2#farmTitle{ font-size:clamp(18px, 5vw, 28px); line-height:1.1; }
+
+  /* Common */
   .pill{padding:.35rem .6rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.04)}
   .btn{padding:.55rem .8rem;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.04);color:#fff;cursor:pointer}
   .btn:hover{transform:translateY(-1px);background:rgba(255,255,255,.07)}
   main{padding:16px; padding-bottom: calc(var(--quest-h) + env(safe-area-inset-bottom, 0px) + 16px);}
   body.no-quest main{ padding-bottom:16px; }
+
   .grid{display:grid;gap:14px}
   .grid-3{grid-template-columns:repeat(3,1fr)}
   .grid-2{grid-template-columns:repeat(2,1fr)}
   @media (max-width:1100px){.grid-3{grid-template-columns:1fr} .grid-2{grid-template-columns:1fr}}
+
   .card{border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}
   .title{margin:.1rem 0 .6rem;font-weight:800}
+
+  /* Lands */
   .land{aspect-ratio: 4 / 3;border-radius:12px;border:1px dashed rgba(255,255,255,.25);display:grid;place-items:center;position:relative;overflow:hidden}
   .land.planted{border-style:solid;background:linear-gradient(180deg, rgba(52,211,153,.15), rgba(255,255,255,.03))}
   .land .timer{position:absolute;bottom:8px;left:8px;font-size:12px;opacity:.85}
+
+  /* Table */
   table{width:100%;border-collapse:collapse;color:#dbe4f3}
   th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08)}
   th{text-align:left}
   .right{text-align:right}
   .callout{margin-top:10px;border:1px solid var(--border);border-radius:16px;padding:12px;background:linear-gradient(135deg, rgba(255,255,255,.04), rgba(255,255,255,0))}
-  /* Tutorial bubble */
-  .quest{position:fixed;right:12px;bottom:max(12px, env(safe-area-inset-bottom, 12px));width:min(360px, calc(100vw - 24px));border:1px solid var(--border);border-radius:16px;background:rgba(12,16,26,.9);backdrop-filter:blur(10px);padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);z-index:50;pointer-events:auto}
+
+  /* Tutorial bubble (sabit ama main padding ile çakışmaz) */
+  .quest{position:fixed;right:12px;bottom:max(12px, env(safe-area-inset-bottom, 12px));width:min(360px, calc(100vw - 24px));border:1px solid var(--border);border-radius:16px;background:rgba(12,16,26,.9);backdrop-filter:blur(10px);padding:14px;box-shadow:0 20px 60px rgba(0,0,0,.4);z-index:50}
   .quest h4{margin:.1rem 0 .35rem}
   .muted{color:var(--muted)}
   .hide{display:none!important}
@@ -51,16 +68,11 @@
 </head>
 <body>
 <div class="app">
-  <!-- SOL MENÜ -->
+  <!-- Sidebar -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="logo">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#052016" stroke-width="1.5"><path d="M12 3c6 0 9 6 9 9-3 0-9-3-9-9Z"/><path d="M12 3C6 3 3 9 3 12c3 0 9-3 9-9Zm0 0v18"/></svg>
-      </div>
-      <div>
-        <div style="font-size:11px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div>
-        <div id="farmMini" style="font-weight:800">Yükleniyor…</div>
-      </div>
+      <div class="logo">🌱</div>
+      <div><div style="font-size:11px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div><div id="farmMini" style="font-weight:800">Yükleniyor…</div></div>
     </div>
     <nav class="nav" id="nav">
       <button class="active" data-tab="farm" type="button">🌱 Çiftlik</button>
@@ -69,22 +81,20 @@
       <button data-tab="profile" type="button">👤 Profil</button>
     </nav>
     <div class="callout muted" style="margin-top:12px">
-      Topraktan token’a: ürünlerini sat, HarmCoin (HC) kazan.
+      Topraktan token’a: ürünlerini sat, Farm Coin (FC) kazan.
     </div>
   </aside>
 
-  <!-- SAĞ TARAF -->
+  <!-- Sağ içerik -->
   <section>
-    <!-- ÜST BAR -->
     <header class="top">
-      <h2 id="farmTitle" style="margin:0">Yükleniyor…</h2>
+      <h2 id="farmTitle">Yükleniyor…</h2>
       <span id="balance" class="pill">💰 —</span>
       <button class="btn" id="btnLogout" type="button">Çıkış</button>
     </header>
 
-    <!-- İÇERİK -->
     <main>
-      <!-- ÇİFTLİK PANELİ -->
+      <!-- Çiftlik paneli -->
       <div id="tab-farm">
         <div class="grid grid-3">
           <!-- Tarlalar -->
@@ -108,7 +118,7 @@
             <div id="status" class="muted" style="margin-top:8px"></div>
           </div>
 
-          <!-- Hızlı İşlemler (demo) -->
+          <!-- Hızlı İşlemler (opsiyonel demo) -->
           <div class="card">
             <div class="title">Hızlı İşlemler</div>
             <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -120,7 +130,7 @@
         </div>
       </div>
 
-      <!-- MARKET PANELİ -->
+      <!-- Market -->
       <div id="tab-market" class="hide">
         <div class="grid grid-2">
           <div class="card">
@@ -140,19 +150,19 @@
           <div class="card">
             <div class="title">Pazar</div>
             <table>
-              <thead><tr><th>Ürün</th><th class="right">Fiyat (HC)</th><th class="right">Adet</th><th class="right">İşlem</th></tr></thead>
+              <thead><tr><th>Ürün</th><th class="right">Fiyat (FC)</th><th class="right">Adet</th><th class="right">İşlem</th></tr></thead>
               <tbody id="marketBody"></tbody>
             </table>
           </div>
         </div>
       </div>
 
-      <!-- KRİPTO PANELİ -->
+      <!-- Kripto -->
       <div id="tab-crypto" class="hide">
         <div class="grid grid-2">
           <div class="card">
             <div class="title">Makine — Mini Rig</div>
-            <div class="muted">Dakikada 1 HC üretir. “Topla” diyerek cüzdana eklersin.</div>
+            <div class="muted">Dakikada 1 FC üretir. “Topla” diyerek cüzdana eklersin.</div>
             <div style="display:flex;gap:8px;margin-top:8px">
               <button class="btn" id="btnCollect" type="button">Topla</button>
               <span id="rigInfo" class="pill">Son toplama: —</span>
@@ -160,13 +170,13 @@
           </div>
 
           <div class="card">
-            <div class="title">HC (HarmCoin)</div>
+            <div class="title">FC (Farm Coin)</div>
             <div class="muted">Oyun içi para birimi. İşlemler demo modunda bakiyeye yansıtılır.</div>
           </div>
         </div>
       </div>
 
-      <!-- PROFİL PANELİ -->
+      <!-- Profil -->
       <div id="tab-profile" class="hide">
         <div class="card">
           <div class="title">Profil</div>
@@ -190,23 +200,35 @@
 <!-- Supabase -->
 <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
 <script>
-  // === Supabase ===
+  // ==== Supabase ====
   const supa = supabase.createClient('https://gukdmxepdgwrwniectnq.supabase.co','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU');
 
-  // === State ===
+  // ==== State ====
   let currentUser = null;
   let lands = [];          // {id, planted:boolean, readyAt:Date|null}
   let marketItems = [];    // demo market
   let rigLast = null;      // kripto toplama anı
   let tutorialStep = 0;    // 0: tohum ekle, 1: ekim, 2: hasat, 3: market
 
+  // ==== Utils ====
   const $ = (s)=>document.querySelector(s);
   const $$ = (s)=>Array.from(document.querySelectorAll(s));
   const now = ()=>new Date();
-  const fmtHC = (n)=>`${Number(n||0)} HC`;
+  const fmtFC = (n)=>`${Number(n||0)} FC`;
 
+  // Tutorial kutusuna göre alt padding ayarla
+  function adjustQuestPadding(){
+    const q = $('#questBox');
+    const h = (q && !q.classList.contains('hide')) ? q.offsetHeight : 0;
+    document.documentElement.style.setProperty('--quest-h',(h||0)+'px');
+    document.body.classList.toggle('no-quest', h===0);
+  }
+  window.addEventListener('load',adjustQuestPadding);
+  window.addEventListener('resize',adjustQuestPadding);
+
+  // ==== Başlat ====
   document.addEventListener('DOMContentLoaded', async () => {
-    // soldaki sekmeler
+    // Sekmeler
     $$('#nav button').forEach(btn=>{
       btn.addEventListener('click', ()=>{
         $$('#nav button').forEach(b=>b.classList.remove('active'));
@@ -218,56 +240,29 @@
       });
     });
 
-    // Envanter kısayolları
-    const addSeedBtn = $('#btnAddSeed');
-    if(addSeedBtn){
-      addSeedBtn.type='button';
-      addSeedBtn.addEventListener('click', async ()=>{
-        await addItem('tohum',1);
-        $('#status').textContent='1 tohum eklendi.';
-        bumpTutorial(1);
-      });
-    }
-    const plantDemoBtn = $('#btnPlantDemo');
-    if(plantDemoBtn){
-      plantDemoBtn.type='button';
-      plantDemoBtn.addEventListener('click', ()=>{
-        const empty = lands.find(l=>!l.planted);
-        if(empty) plantOnLand(empty.id);
-        else $('#status').textContent='Boş tarla yok.';
-      });
-    }
-
-    // Market
-    const listBtn = $('#btnList');
-    if(listBtn){
-      listBtn.type='button';
-      listBtn.addEventListener('click', ()=>{ listToMarket(); renderMarket(); bumpTutorial(4); });
-    }
-
-    // Kripto
-    const collectBtn = $('#btnCollect');
-    if(collectBtn){
-      collectBtn.type='button';
-      collectBtn.addEventListener('click', collectRig);
-    }
-
-    // Hızlı işlemler (demo)
-    const buyLandBtn = $('#btnBuyLand');
-    if(buyLandBtn){ buyLandBtn.type='button'; buyLandBtn.addEventListener('click', ()=>alert('Demo: Tarla satın alma henüz DB’ye bağlı değil.')); }
-    const sellWheatBtn = $('#btnSellWheat');
-    if(sellWheatBtn){ sellWheatBtn.type='button'; sellWheatBtn.addEventListener('click', ()=>{ $('#sellItem').value='bugday'; $('#sellAmount').value=1; listToMarket(); renderMarket(); }); }
-
-    // Tutorial kutusu
-    const quest = $('#questBox');
-    $('#btnQuestHide').addEventListener('click', ()=>{ quest.classList.add('hide'); document.body.classList.add('no-quest'); });
-    $('#btnQuestNext').addEventListener('click', ()=> bumpTutorial(tutorialStep+1));
+    // Tutorial butonları
+    $('#btnQuestHide').onclick=()=>{ $('#questBox').classList.add('hide'); adjustQuestPadding(); };
+    $('#btnQuestNext').onclick=()=>{ bumpTutorial(tutorialStep+1); adjustQuestPadding(); };
 
     // Çıkış
-    $('#btnLogout').addEventListener('click', logout);
+    $('#btnLogout').onclick = logout;
 
-    // Başlat
+    // Envanter kısayolları
+    $('#btnAddSeed').onclick = async ()=>{ await addItem('tohum',1); $('#status').textContent='1 tohum eklendi.'; bumpTutorial(1); };
+    $('#btnPlantDemo').onclick = ()=>{ const empty = lands.find(l=>!l.planted); if(empty) plantOnLand(empty.id); else $('#status').textContent='Boş tarla yok.'; };
+
+    // Market
+    $('#btnList').onclick = ()=>{ listToMarket(); renderMarket(); bumpTutorial(4); };
+
+    // Kripto
+    $('#btnCollect').onclick = collectRig;
+
+    // Demo hızlı işlemler
+    const buyLandBtn = $('#btnBuyLand'); if(buyLandBtn) buyLandBtn.onclick=()=>alert('Demo: Tarla satın alma henüz DB’ye bağlı değil.');
+    const sellWheatBtn = $('#btnSellWheat'); if(sellWheatBtn) sellWheatBtn.onclick=()=>{ $('#sellItem').value='bugday'; $('#sellAmount').value=1; listToMarket(); renderMarket(); };
+
     await init();
+    adjustQuestPadding();
   });
 
   async function init(){
@@ -288,7 +283,7 @@
     updateQuestText();
   }
 
-  // === Header & Profil ===
+  // ==== Header & Profil ====
   async function loadFarmHeader(uid){
     const { data } = await supa.from('farms').select('farm_name, tutorial_step').eq('user_id', uid).single();
     $('#farmTitle').textContent = data?.farm_name ? `Hoşgeldin ${data.farm_name}!` : 'Hoşgeldin!';
@@ -297,7 +292,7 @@
   }
   async function loadWallet(uid){
     const w = await supa.from('wallets').select('balance').eq('user_id', uid).single();
-    $('#balance').textContent = `💰 ${fmtHC(w.data?.balance ?? 0)}`;
+    $('#balance').textContent = `💰 ${fmtFC(w.data?.balance ?? 0)}`;
   }
   async function loadInventory(uid){
     const inv = await supa.from('inventory').select('item_name,amount').eq('user_id', uid).order('item_name');
@@ -313,7 +308,6 @@
     const roles = (data||[]).map(r=>r.role).join(', ') || 'player';
     const box = $('#profileBox'); if(box) box.textContent = `Roller: ${roles}`;
   }
-
   async function isAdmin(){
     const { data } = await supa.from('user_roles').select('role').eq('user_id', currentUser.id).eq('role','admin').maybeSingle();
     return !!data;
@@ -324,7 +318,7 @@
     }
   }
 
-  // === Envanter helper ===
+  // ==== Envanter helpers ====
   async function addItem(name, amount){
     const { data } = await supa.from('inventory').select('amount').eq('user_id', currentUser.id).eq('item_name', name).maybeSingle();
     if(data){
@@ -348,7 +342,7 @@
     return true;
   }
 
-  // === Bakiye helper ===
+  // ==== Bakiye helper ====
   async function changeBalance(delta){
     const w = await supa.from('wallets').select('balance').eq('user_id', currentUser.id).single();
     const nb = Number(w.data?.balance||0) + Number(delta||0);
@@ -358,7 +352,7 @@
     return true;
   }
 
-  // === Çiftlik: Tarlalar ===
+  // ==== Tarlalar ====
   function renderLands(){
     const wrap = $('#lands'); wrap.innerHTML='';
     lands.forEach(slot=>{
@@ -405,9 +399,9 @@
     bumpTutorial(3);
   }
 
-  // === Market (demo) ===
+  // ==== Market (demo) ====
   function renderMarket(){
-    const body = $('#marketBody'); body.innerHTML='';
+    const body = $('#marketBody'); if(!body) return; body.innerHTML='';
     marketItems.forEach((m,i)=>{
       const tr = document.createElement('tr');
       tr.innerHTML = `<td>${m.item}</td>
@@ -436,19 +430,19 @@
     await addItem(m.item, m.amount);
     marketItems.splice(i,1);
     renderMarket();
-    $('#status').textContent = `Satın alındı: ${m.amount} ${m.item} (−${cost} HC)`;
+    $('#status').textContent = `Satın alındı: ${m.amount} ${m.item} (−${cost} FC)`;
   }
 
-  // === Kripto (demo): dakikada 1 HC ===
+  // ==== Kripto (demo) ====
   function producedSince(d){ if(!d) return 0; const ms = now()-d; return Math.floor(ms/60000); }
   async function collectRig(){
     const gain = Math.max(1, producedSince(rigLast||new Date(Date.now()-60000)));
     await changeBalance(gain);
     rigLast = now();
-    $('#rigInfo').textContent = `Son toplama: ${rigLast.toLocaleTimeString()} (+${gain} HC)`;
+    $('#rigInfo').textContent = `Son toplama: ${rigLast.toLocaleTimeString()} (+${gain} FC)`;
   }
 
-  // === Tutorial ===
+  // ==== Tutorial ====
   function updateQuestText(){
     const q = $('#questText');
     if(tutorialStep<=0) q.textContent = 'Adım 1: “+ Tohum Ekle” butonuna bas.';
@@ -464,9 +458,8 @@
     }
   }
 
-  // === Çıkış ===
+  // ==== Çıkış ====
   async function logout(){ await supa.auth.signOut(); window.location.href = 'index.html'; }
-
 </script>
 </body>
-</html>
+</html> 

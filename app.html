@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FarmChain — Tek Dosya Uygulama</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0d18; --ink:#e9eef3; --muted:#a8b1c4; --border:rgba(255,255,255,.12);
+      --bg-image: url('assets/bg-farm.jpg');
+      --bg-overlay: rgba(10,13,24,.70);
+    }
+    *{box-sizing:border-box} html,body{height:100%}
+    body{
+      margin:0;color:var(--ink);font:15px/1.6 "Inter",system-ui,Segoe UI,Roboto,Arial;
+      background:
+        linear-gradient(0deg,var(--bg-overlay),var(--bg-overlay)),
+        var(--bg-image) center/cover no-repeat fixed;
+    }
+    @media (max-width:900px){ body{ background-attachment: scroll; } }
+    .btn{padding:.55rem .8rem;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
+    .btn:hover{background:rgba(255,255,255,.1)}
+    .pill{padding:.4rem .6rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.06);color:#e9eef3}
+    .muted{color:var(--muted)}
+    .card{border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}
+    .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+    .hide{display:none!important}
+
+    header.top{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(10,13,24,.8);backdrop-filter:blur(10px);}
+    .brand{display:flex;align-items:center;gap:10px}
+    .logo{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;background:linear-gradient(135deg,#34d399,#14b8a6);color:#052017;font-weight:800}
+
+    .app{display:grid;grid-template-columns:260px 1fr;min-height:100svh}
+    @media (max-width:900px){.app{grid-template-columns:1fr}}
+    aside.sidebar{padding:16px;border-right:1px solid var(--border);background:linear-gradient(180deg, rgba(255,255,255,.05), rgba(255,255,255,.03))}
+    nav.nav{display:grid;gap:8px}
+    nav.nav .btn{width:100%;text-align:left}
+
+    main{padding:16px}
+    .grid{display:grid;gap:14px}
+    .grid-2{grid-template-columns:repeat(2,1fr)}
+    .grid-3{grid-template-columns:repeat(3,1fr)}
+    @media (max-width:1100px){.grid-2,.grid-3{grid-template-columns:1fr}}
+
+    table{width:100%;border-collapse:collapse;color:#dbe4f3}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08)}
+    th{text-align:left}
+    .right{text-align:right}
+
+    .land{aspect-ratio:4/3;border-radius:12px;border:1px dashed rgba(255,255,255,.25);display:grid;place-items:center;position:relative}
+    .land.planted{border-style:solid;background:linear-gradient(180deg, rgba(52,211,153,.15), rgba(255,255,255,.03))}
+    .land .timer{position:absolute;bottom:8px;left:8px;font-size:12px;opacity:.85}
+
+    #siloModal .card{box-shadow:0 20px 60px rgba(0,0,0,.5);animation:popIn .2s ease}
+    @keyframes popIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+  </style>
+</head>
+<body>
+
+  <!-- AUTH -->
+  <section id="authView" class="card" style="max-width:520px;margin:10vh auto;">
+    <div class="row" style="justify-content:space-between">
+      <div class="brand"><div class="logo">🌱</div><div><div style="font-size:12px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div><div style="font-weight:800">Giriş / Kayıt</div></div></div>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <input id="farmName" class="pill" placeholder="Çiftlik adı (kayıt için)" style="flex:1;min-width:200px">
+    </div>
+    <div class="row" style="margin-top:8px">
+      <input id="email" class="pill" type="email" placeholder="E‑posta" style="flex:1;min-width:200px">
+      <input id="password" class="pill" type="password" placeholder="Şifre" style="flex:1;min-width:160px">
+    </div>
+    <div class="row" style="margin-top:10px">
+      <button id="btnLogin" class="btn">Giriş Yap</button>
+      <button id="btnSignup" class="btn">Kayıt Ol</button>
+      <span class="muted" id="authHint">Kayıt için e‑posta doğrulaması gerekebilir.</span>
+    </div>
+  </section>
+
+  <!-- APP -->
+  <section id="appView" class="hide">
+    <header class="top">
+      <div class="brand">
+        <div class="logo">🌱</div>
+        <div>
+          <div style="font-size:11px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div>
+          <div id="farmTitle" style="font-weight:800">Yükleniyor…</div>
+        </div>
+      </div>
+      <div class="row">
+        <span id="balance" class="pill">💰 —</span>
+        <!-- GEÇİŞ DÜĞMESİ: admin ise JS tarafında gösterilecek -->
+        <button id="btnToggleView" class="btn" style="display:none">↔ Admin / Oyun</button>
+        <button id="btnLogout" class="btn">Çıkış</button>
+      </div>
+    </header>
+
+    <div class="app">
+      <aside class="sidebar">
+        <nav class="nav" id="nav">
+          <button class="btn" data-route="#game">🌱 Çiftlik</button>
+          <button class="btn" data-route="#market">🛒 Market</button>
+          <button class="btn" data-route="#crypto">⚡ Kripto</button>
+          <button class="btn" data-route="#profile">👤 Profil</button>
+          <!-- Admin butonu JS ile ayrıca eklenecek (opsiyonel) -->
+        </nav>
+        <div class="card" style="margin-top:12px"><span class="muted">Topraktan token’a: ürün sat, FC kazan.</span></div>
+      </aside>
+
+      <main>
+        <!-- Silo bar -->
+        <div id="siloBar" class="card" style="margin:0 0 12px 0">
+          <div class="row">
+            <strong>🏚️ Silo</strong>
+            <span id="siloCap" class="pill">— / —</span>
+            <span id="siloLevel" class="pill">Seviye 1</span>
+            <button id="btnOpenSilo" class="btn">Silo’yu Aç</button>
+            <button id="btnUpgradeSilo" class="btn">Yükselt</button>
+            <span id="siloUpgradeInfo" class="muted">Ücret: — FC</span>
+          </div>
+        </div>
+
+        <!-- ROUTES -->
+        <section id="route-game">
+          <div class="grid grid-3">
+            <div class="card">
+              <div class="row" style="justify-content:space-between"><strong>Tarlalar</strong></div>
+              <div class="grid grid-2" id="lands"></div>
+              <div class="muted" style="margin-top:8px">“Ekim Yap” → 10sn → “Hasat”.</div>
+            </div>
+
+            <div class="card">
+              <strong>Envanter</strong>
+              <div class="row" style="margin:8px 0">
+                <button class="btn" id="btnAddSeed">+ Tohum Ekle</button>
+                <button class="btn" id="btnPlantDemo">🌾 Ekim (10sn)</button>
+              </div>
+              <table><thead><tr><th>Ürün</th><th class="right">Miktar</th></tr></thead><tbody id="invBody"></tbody></table>
+              <div id="status" class="muted" style="margin-top:8px"></div>
+            </div>
+
+            <div class="card">
+              <strong>Hızlı İşlemler</strong>
+              <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnSellWheat">Buğday Sat (×1) — demo</button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="route-market" class="hide">
+          <div class="grid grid-2">
+            <div class="card">
+              <strong>Satışa Koy (demo)</strong>
+              <div class="row" style="margin-top:8px">
+                <select id="sellItem" class="pill">
+                  <option value="bugday">Buğday</option>
+                  <option value="tohum">Tohum</option>
+                </select>
+                <input id="sellAmount" class="pill" type="number" min="1" value="1" style="width:90px">
+                <input id="sellPrice" class="pill" type="number" min="1" value="10" style="width:110px">
+                <button id="btnList" class="btn">Listele</button>
+              </div>
+              <div class="muted">Gerçek ilanlar için tablo ekleyebiliriz.</div>
+            </div>
+            <div class="card">
+              <strong>Pazar</strong>
+              <table><thead><tr><th>Ürün</th><th class="right">Fiyat (FC)</th><th class="right">Adet</th><th class="right">İşlem</th></tr></thead><tbody id="marketBody"></tbody></table>
+            </div>
+          </div>
+        </section>
+
+        <section id="route-crypto" class="hide">
+          <div class="grid grid-2">
+            <div class="card">
+              <strong>Mini Rig</strong>
+              <div class="muted">Dakikada 1 FC üretir.</div>
+              <div class="row" style="margin-top:8px">
+                <button class="btn" id="btnCollect">Topla</button>
+                <span id="rigInfo" class="pill">Son toplama: —</span>
+              </div>
+            </div>
+            <div class="card"><strong>FC (Farm Coin)</strong><div class="muted">Oyun içi para birimi.</div></div>
+          </div>
+        </section>
+
+        <section id="route-profile" class="hide">
+          <div class="card"><strong>Profil</strong><div id="profileBox" class="muted">Yükleniyor…</div></div>
+        </section>
+
+        <!-- ADMIN ROUTE -->
+        <section id="route-admin" class="hide">
+          <div class="grid grid-3" style="margin-bottom:16px">
+            <div class="card"><div class="muted">Toplam Oyuncu</div><div style="font-size:28px;font-weight:800" id="sumPlayers">—</div></div>
+            <div class="card"><div class="muted">Toplam FC</div><div style="font-size:28px;font-weight:800" id="sumFC">—</div></div>
+            <div class="card"><div class="muted">Ortalama Silo Seviyesi</div><div style="font-size:28px;font-weight:800" id="avgSilo">—</div></div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <div class="row">
+              <input id="q" class="pill" placeholder="Ara: farm adı" style="min-width:260px">
+              <button id="btnSearch" class="btn">Ara</button>
+            </div>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <strong>Çiftlikler</strong>
+            <table><thead><tr><th>Kullanıcı</th><th>Çiftlik</th><th class="right">Tutorial</th></tr></thead><tbody id="tbodyFarms"></tbody></table>
+          </div>
+
+          <div class="card" style="margin-bottom:14px">
+            <strong>Silo & Bakiye</strong>
+            <table><thead><tr><th>Kullanıcı</th><th class="right">Bakiye</th><th class="right">Seviye</th><th class="right">Kapasite</th></tr></thead><tbody id="tbodyWallets"></tbody></table>
+          </div>
+
+          <div class="card">
+            <strong>Envanter</strong>
+            <table><thead><tr><th>Kullanıcı</th><th>Ürün</th><th class="right">Miktar</th><th>Kategori</th></tr></thead><tbody id="tbodyInv"></tbody></table>
+          </div>
+        </section>
+      </main>
+    </div>
+  </section>
+
+  <!-- Silo Modal -->
+  <div id="siloModal" class="hide" style="position:fixed;inset:0;background:rgba(0,0,0,.55);display:grid;place-items:center;z-index:100;">
+    <div class="card" style="width:min(900px,95vw);max-height:85vh;overflow:auto">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:.2rem 0">🏚️ Silo İçeriği</h3>
+        <button class="btn" id="btnCloseSilo">Kapat</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px">Ürünler kategorilere göre listelenir.</div>
+      <div id="siloTabs" class="row" style="margin-bottom:8px">
+        <button class="btn" data-cat="hepsi">Hepsi</button>
+        <button class="btn" data-cat="bitkisel">Bitkisel</button>
+        <button class="btn" data-cat="yem">Yemler</button>
+        <button class="btn" data-cat="hayvansal">Hayvansal</button>
+        <button class="btn" data-cat="süt">Süt</button>
+        <button class="btn" data-cat="genel">Genel</button>
+      </div>
+      <table><thead><tr><th>Ürün</th><th>Kategori</th><th class="right">Miktar</th></tr></thead><tbody id="siloBody"></tbody></table>
+    </div>
+  </div>
+
+  <!-- Supabase + Uygulama JS -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Supabase client oluşturma: app.js içerisinde kullanılacak -->
+  <script>
+    window.FARMCHAIN_SUPABASE_URL = 'https://YOUR-PROJECT-REF.supabase.co';   /* <-- doldur */
+    window.FARMCHAIN_SUPABASE_ANON= 'YOUR-ANON-KEY';                          /* <-- doldur */
+  </script>
+  <script src="./app.js"></script>
+</body>
+</html>

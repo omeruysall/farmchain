@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>FarmChain — Tek Dosya Uygulama</title>
+  <title>FarmChain — Tek Sayfa Uygulama</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
     :root{
       --bg:#0a0d18; --ink:#e9eef3; --muted:#a8b1c4; --border:rgba(255,255,255,.12);
-      --bg-image: url('assets/bg-farm.jpg');
+      --bg-image: url('assets/bg-farm.jpg');   /* istersen değiştir ya da kaldır */
       --bg-overlay: rgba(10,13,24,.70);
     }
     *{box-sizing:border-box} html,body{height:100%}
@@ -21,15 +21,14 @@
     @media (max-width:900px){ body{ background-attachment: scroll; } }
     .btn{padding:.55rem .8rem;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
     .btn:hover{background:rgba(255,255,255,.1)}
+    .btn.em{background:linear-gradient(135deg,#34d399,#14b8a6);border-color:transparent;color:#052017;font-weight:700}
+    .btn.em:hover{filter:brightness(1.05)}
     .pill{padding:.4rem .6rem;border:1px solid var(--border);border-radius:12px;background:rgba(255,255,255,.06);color:#e9eef3}
     .muted{color:var(--muted)}
     .card{border:1px solid var(--border);background:rgba(255,255,255,.04);border-radius:16px;padding:14px}
     .row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
     .hide{display:none!important}
-    /* ek stil */
     .tag{padding:.2rem .5rem;border:1px solid var(--border);border-radius:999px;background:rgba(255,255,255,.05);color:#e9eef3;font-size:12px}
-    .btn.em{background:linear-gradient(135deg,#34d399,#14b8a6);border-color:transparent;color:#052017;font-weight:700}
-    .btn.em:hover{filter:brightness(1.05)}
 
     header.top{display:flex;gap:12px;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--border);background:rgba(10,13,24,.8);backdrop-filter:blur(10px);}
     .brand{display:flex;align-items:center;gap:10px}
@@ -79,6 +78,14 @@
       <button id="btnSignup" class="btn">Kayıt Ol</button>
       <span class="muted" id="authHint">Kayıt için e‑posta doğrulaması gerekebilir.</span>
     </div>
+    <!-- Admin başlangıç seçenekleri -->
+    <div class="row" style="margin-top:6px">
+      <label class="muted" style="display:flex;align-items:center;gap:8px;cursor:pointer">
+        <input id="startAsAdmin" type="checkbox">
+        <span>Admin paneliyle başla (yetkim varsa)</span>
+      </label>
+      <button id="btnLoginAsAdmin" class="btn">Admin Girişi</button>
+    </div>
   </section>
 
   <!-- APP -->
@@ -86,15 +93,17 @@
     <header class="top">
       <div class="brand">
         <div class="logo">🌱</div>
-        <div>
-          <div style="font-size:11px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div>
-          <div id="farmTitle" style="font-weight:800">Yükleniyor…</div>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div>
+            <div style="font-size:11px;letter-spacing:.18em;color:#bfffe6">FARMCHAIN</div>
+            <div id="farmTitle" style="font-weight:800">Yükleniyor…</div>
+          </div>
+          <!-- Mod geçiş düğmesi (sadece adminlerde görünür) -->
+          <button id="btnRoleSwitch" class="btn" style="display:none">Admin</button>
         </div>
       </div>
       <div class="row">
         <span id="balance" class="pill">💰 —</span>
-        <!-- GEÇİŞ DÜĞMESİ: admin ise JS tarafında gösterilecek -->
-        <button id="btnToggleView" class="btn" style="display:none">↔ Admin / Oyun</button>
         <button id="btnLogout" class="btn">Çıkış</button>
       </div>
     </header>
@@ -106,7 +115,7 @@
           <button class="btn" data-route="#market">🛒 Market</button>
           <button class="btn" data-route="#crypto">⚡ Kripto</button>
           <button class="btn" data-route="#profile">👤 Profil</button>
-          <!-- Admin butonu JS ile ayrıca eklenecek (opsiyonel) -->
+          <!-- Admin linki JS ile eklenebilir -->
         </nav>
         <div class="card" style="margin-top:12px"><span class="muted">Topraktan token’a: ürün sat, FC kazan.</span></div>
       </aside>
@@ -153,16 +162,16 @@
         </section>
 
         <section id="route-market" class="hide">
-          <!-- >>> VİTRİN SEKME + ALANLAR (EKLENEN BLOK) -->
+          <!-- Vitrin sekmeleri -->
           <div class="row" style="margin-bottom:10px">
             <button id="tab-market" class="btn active">🛒 Ürünler</button>
             <button id="tab-crypto" class="btn">⚡ Tokenlar</button>
             <span class="pill" id="badge-market">Market</span>
             <span class="pill" id="badge-crypto" style="opacity:.8">Kripto</span>
           </div>
+          <!-- Vitrin görünümleri -->
           <div id="view-market" class="grid grid-2" style="margin-bottom:16px"></div>
           <div id="view-crypto" class="grid grid-2 hide" style="margin-bottom:16px"></div>
-          <!-- <<< EKLENEN BLOK SONU -->
 
           <div class="grid grid-2">
             <div class="card">
@@ -211,15 +220,30 @@
             <div class="card"><div class="muted">Ortalama Silo Seviyesi</div><div style="font-size:28px;font-weight:800" id="avgSilo">—</div></div>
           </div>
 
+          <!-- Admin Yönetimi -->
           <div class="card" style="margin-bottom:14px">
             <div class="row">
-              <input id="q" class="pill" placeholder="Ara: farm adı" style="min-width:260px">
-              <button id="btnSearch" class="btn">Ara</button>
+              <strong>👑 Admin Yönetimi</strong>
+              <input id="adminUserId" class="pill" placeholder="Kullanıcı user_id" style="min-width:260px">
+              <button id="btnMakeAdmin" class="btn">Admin Yap</button>
+              <button id="btnRemoveAdmin" class="btn">Admini Kaldır</button>
+            </div>
+            <div class="row" style="margin-top:10px">
+              <input id="adminEmail" class="pill" type="email" placeholder="veya e‑posta ile ara → admin yap/kaldır" style="min-width:320px">
+              <button id="btnMakeAdminEmail" class="btn">E‑posta → Admin Yap</button>
+              <button id="btnRemoveAdminEmail" class="btn">E‑posta → Admini Kaldır</button>
+            </div>
+            <div class="muted" style="margin-top:6px">
+              Not: E‑posta → user_id eşleşmesi <code>public.profiles</code> tablosundan yapılır.
             </div>
           </div>
 
           <div class="card" style="margin-bottom:14px">
             <strong>Çiftlikler</strong>
+            <div class="row" style="margin:8px 0">
+              <input id="q" class="pill" placeholder="Ara: farm adı" style="min-width:260px">
+              <button id="btnSearch" class="btn">Ara</button>
+            </div>
             <table><thead><tr><th>Kullanıcı</th><th>Çiftlik</th><th class="right">Tutorial</th></tr></thead><tbody id="tbodyFarms"></tbody></table>
           </div>
 

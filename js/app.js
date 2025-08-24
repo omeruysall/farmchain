@@ -16,6 +16,9 @@ let rigLast = null;
 let tutorialStep = 0;
 let silo = { level: 1, capacity: 20 };
 
+// Mod durumu ('player' | 'admin')
+let currentMode = localStorage.getItem('fc_mode') || 'player';
+
 // ---- DOM Helpers ----
 const $ = (s) => document.querySelector(s);
 const $$ = (s) => Array.from(document.querySelectorAll(s));
@@ -36,22 +39,34 @@ function go(route) {
 window.addEventListener("hashchange", () => {
   const r = location.hash || "#game";
   go(r);
+  // Hash değişince moda göre etiketi güncelle
+  if(r === '#admin' && isAdmin) currentMode = 'admin';
+  else if(r === '#game') currentMode = 'player';
+  localStorage.setItem('fc_mode', currentMode);
+  updateRoleSwitchButton();
 });
 
-// ---- Admin <-> Oyun Toggle ----
-function toggleAdminGame() {
-  const current = location.hash || "#game";
-  if (current === "#admin") go("#game");
-  else go("#admin");
-}
-function showAdminToggleIfAny() {
-  const btn = document.getElementById("btnToggleView");
-  if (isAdmin) {
-    btn.style.display = "inline-block";
-    btn.onclick = toggleAdminGame;
-  } else {
-    btn.style.display = "none";
+// ---- Admin <-> Oyuncu Toggle (başlık düğmesi) ----
+function updateRoleSwitchButton(){
+  const btn = document.getElementById('btnRoleSwitch');
+  if(!btn) return;
+  if(!isAdmin){
+    btn.style.display = 'none';
+    return;
   }
+  btn.style.display = 'inline-block';
+  // Düğme her zaman "diğer mod"u yazar
+  btn.textContent = (currentMode === 'admin') ? 'Oyuncu' : 'Admin';
+  btn.title = (currentMode === 'admin')
+    ? 'Oyuncu moduna geç'
+    : 'Admin moduna geç';
+}
+function switchMode(){
+  if(!isAdmin) return;
+  currentMode = (currentMode === 'admin') ? 'player' : 'admin';
+  localStorage.setItem('fc_mode', currentMode);
+  if(currentMode === 'admin') go('#admin'); else go('#game');
+  updateRoleSwitchButton();
 }
 
 // ===================== AUTH =====================
@@ -60,6 +75,12 @@ async function doLogin() {
   const pass = $("#password").value;
   const { error } = await supa.auth.signInWithPassword({ email, password: pass });
   if (error) return alert(error.message);
+
+  // Girişte adminle başla seçeneği
+  const startAdmin = $("#startAsAdmin")?.checked;
+  if(startAdmin) localStorage.setItem('fc_startAdmin','1');
+  else localStorage.removeItem('fc_startAdmin');
+
   await boot();
 }
 
@@ -83,6 +104,17 @@ async function doSignup() {
     amount: 1,
     category: "bitkisel",
   });
+  // Profil (email eşleşmesi için)
+  await supa.from("profiles").insert({
+    user_id: uid,
+    email: email,
+    display_name: farmName
+  });
+
+  // Kayıt sonrası başlangıç modu işaretle
+  const startAdmin = $("#startAsAdmin")?.checked;
+  if(startAdmin) localStorage.setItem('fc_startAdmin','1');
+  else localStorage.removeItem('fc_startAdmin');
 
   alert("Kayıt başarılı! E‑posta doğrulaması gerekiyorsa lütfen onaylayın.");
 }
@@ -142,11 +174,26 @@ async function boot() {
     await loadAdminAll();
   }
 
-  // Toggle görünürlüğü
-  showAdminToggleIfAny();
+  // Başlangıç modunu belirle ve düğmeyi hazırla
+  if((location.hash || '') === '#admin' && isAdmin){
+    currentMode = 'admin';
+  } else {
+    const saved = localStorage.getItem('fc_mode');
+    if(saved) currentMode = saved;
+    const startAdminFlag = localStorage.getItem('fc_startAdmin') === '1';
+    if(startAdminFlag && isAdmin) currentMode = 'admin';
+  }
 
-  // Route başlangıç
-  go(location.hash || "#game");
+  // Başlıktaki mod düğmesi
+  const roleBtn = document.getElementById('btnRoleSwitch');
+  if(roleBtn && !roleBtn._bound){
+    roleBtn._bound = true;
+    roleBtn.onclick = switchMode;
+  }
+  updateRoleSwitchButton();
+
+  // Seçilen moda git
+  if(currentMode === 'admin' && isAdmin) go('#admin'); else go('#game');
 
   // Vitrin (market sayfası) için ilk çizimler
   renderMarketCards();
@@ -193,7 +240,6 @@ function siloUpgradeCost() {
   return Math.round(30 * Math.pow(1.6, silo.level - 1));
 }
 function nextCapacity() {
-  // bir sonraki kapasite
   return 20 + 10 * silo.level;
 }
 async function loadSilo(uid) {
@@ -224,7 +270,6 @@ async function updateSiloBar() {
   $("#siloUpgradeInfo").textContent = `Ücret: ${siloUpgradeCost()} FC (Kap.: ${nextCapacity()})`;
 }
 async function upgradeSilo() {
-  // bakiye kontrol & düş
   const w = await supa
     .from("wallets")
     .select("balance")
@@ -235,7 +280,6 @@ async function upgradeSilo() {
   await supa.from("wallets").update({ balance: nb }).eq("user_id", currentUser.id);
   await loadWallet(currentUser.id);
 
-  // seviye artır
   silo.level += 1;
   silo.capacity = nextCapacity();
   await supa
@@ -372,7 +416,6 @@ function renderLands() {
   });
 }
 async function plantOnLand(id) {
-  // kapasite kontrolü yan etkisiz tetikleyelim
   const capOk = await addItemWithCap("tohum", 0);
   if (!capOk) return;
   const ok = await removeItem("tohum", 1);
@@ -460,7 +503,7 @@ async function collectRig() {
   $("#rigInfo").textContent = `Son toplama: ${rigLast.toLocaleTimeString()} (+${gain} FC)`;
 }
 
-// ===================== ADMIN LOADERS =====================
+// ===================== ADMIN: özet & listeler =====================
 async function loadAdminAll() {
   await Promise.all([loadSummary(), loadAdminFarms(), loadAdminWallets(), loadAdminInventory()]);
 }
@@ -524,12 +567,60 @@ async function loadAdminInventory() {
   });
 }
 
+// ===================== ADMIN: rol yönetimi (user_id / e‑posta) =====================
+async function makeAdminByUserId(uid){
+  if(!uid) return alert('user_id girin.');
+  const { error } = await supa.from('user_roles').insert({ user_id: uid, role:'admin' });
+  if(error){ alert('Hata: ' + error.message); return; }
+  alert('Admin verildi.');
+}
+async function removeAdminByUserId(uid){
+  if(!uid) return alert('user_id girin.');
+  const { error } = await supa.from('user_roles')
+    .delete()
+    .eq('user_id', uid)
+    .eq('role', 'admin');
+  if(error){ alert('Hata: ' + error.message); return; }
+  alert('Admin kaldırıldı.');
+}
+async function getUserIdByEmail(email){
+  if(!email) return null;
+  const { data, error } = await supa
+    .from('profiles')
+    .select('user_id')
+    .ilike('email', email.trim())   // tam eşleşme istersen .eq kullan
+    .maybeSingle();
+  if(error){ console.warn(error); return null; }
+  return data?.user_id || null;
+}
+async function makeAdminByEmail(email){
+  const uid = await getUserIdByEmail(email);
+  if(!uid) return alert('E‑posta bulunamadı: '+email);
+  return makeAdminByUserId(uid);
+}
+async function removeAdminByEmail(email){
+  const uid = await getUserIdByEmail(email);
+  if(!uid) return alert('E‑posta bulunamadı: '+email);
+  return removeAdminByUserId(uid);
+}
+
 // ===================== BINDINGS =====================
 function bindAuthButtons() {
   const login = $("#btnLogin");
   const signup = $("#btnSignup");
   if (login && !login._bound) { login._bound = true; login.onclick = doLogin; }
   if (signup && !signup._bound) { signup._bound = true; signup.onclick = doSignup; }
+
+  // "Admin Girişi" hızlı butonu
+  const loginAsAdmin = $("#btnLoginAsAdmin");
+  if(loginAsAdmin && !loginAsAdmin._bound){
+    loginAsAdmin._bound = true;
+    loginAsAdmin.onclick = () => {
+      const cb = $("#startAsAdmin");
+      if(cb) cb.checked = true;
+      $("#btnLogin")?.click();
+    };
+  }
 }
 function bindStaticButtons() {
   const logout = $("#btnLogout");
@@ -537,11 +628,9 @@ function bindStaticButtons() {
     logout._bound = true;
     logout.onclick = async () => { await supa.auth.signOut(); location.reload(); };
   }
-  // Silo modal static
   const closeBtn = $("#btnCloseSilo");
   if (closeBtn && !closeBtn._bound) { closeBtn._bound = true; closeBtn.onclick = closeSilo; }
 
-  // Silo sekmeleri
   $$("#siloTabs .btn").forEach((b) => {
     if (!b._bound) {
       b._bound = true;
@@ -549,16 +638,25 @@ function bindStaticButtons() {
     }
   });
 
-  // Nav buttons (static)
   $$("#nav .btn").forEach((b) => {
     if (!b._bound) {
       b._bound = true;
       b.addEventListener("click", () => go(b.dataset.route));
     }
   });
+
+  // Admin yönetimi butonları (admin route)
+  const bAdd   = $("#btnMakeAdmin");
+  const bRem   = $("#btnRemoveAdmin");
+  const bAddE  = $("#btnMakeAdminEmail");
+  const bRemE  = $("#btnRemoveAdminEmail");
+
+  if (bAdd && !bAdd._bound) { bAdd._bound = true; bAdd.onclick = () => makeAdminByUserId($("#adminUserId").value.trim()); }
+  if (bRem && !bRem._bound) { bRem._bound = true; bRem.onclick = () => removeAdminByUserId($("#adminUserId").value.trim()); }
+  if (bAddE && !bAddE._bound){ bAddE._bound = true; bAddE.onclick = () => makeAdminByEmail($("#adminEmail").value.trim()); }
+  if (bRemE && !bRemE._bound){ bRemE._bound = true; bRemE.onclick = () => removeAdminByEmail($("#adminEmail").value.trim()); }
 }
 function bindGameButtons() {
-  // Game
   const addSeed = $("#btnAddSeed");
   if (addSeed && !addSeed._bound) {
     addSeed._bound = true;
@@ -587,24 +685,18 @@ function bindGameButtons() {
     };
   }
 
-  // Market
   const listBtn = $("#btnList");
   if (listBtn && !listBtn._bound) {
     listBtn._bound = true;
-    listBtn.onclick = () => {
-      listToMarket();
-      renderMarket();
-    };
+    listBtn.onclick = () => { listToMarket(); renderMarket(); };
   }
 
-  // Crypto
   const collect = $("#btnCollect");
   if (collect && !collect._bound) {
     collect._bound = true;
     collect.onclick = collectRig;
   }
 
-  // Silo bar
   const openSiloBtn = $("#btnOpenSilo");
   if (openSiloBtn && !openSiloBtn._bound) {
     openSiloBtn._bound = true;
@@ -618,21 +710,18 @@ function bindGameButtons() {
 }
 
 // ============= VİTRİN: Basit veriler & Sekmeler (çakışma yok) =============
-// Statik vitrin verileri (istersen dış JSON'dan da çekebilirsin)
 const SHOWCASE_PRODUCTS = [
   { name: "Organik Zeytin", tag: "Aydın · Erken Hasat", price: "₺220/lt", stock: 38 },
   { name: "Çiğ Süt", tag: "Balıkesir · Günlük", price: "₺35/lt", stock: 120 },
   { name: "Serbest Gezen Yumurta", tag: "Manisa · XL", price: "₺90/10'lu", stock: 64 },
   { name: "Lavanta Balı", tag: "Isparta · 2025", price: "₺360/500g", stock: 42 },
 ];
-
 const SHOWCASE_TOKENS = [
   { sym: "$FARM",  name: "Farm‑Chain",  price: 1.24, change: +4.2, points: "0,22 16,18 32,18 48,20 64,12 80,10 100,11", color:"#34d399" },
   { sym: "$HONEY", name: "Honey Token", price: 0.32, change: -1.8, points: "0,10 16,11 32,9 48,12 64,14 80,16 100,15", color:"#fb7185" },
   { sym: "$GRAIN", name: "Grain Index", price: 0.87, change: +0.6, points: "0,18 16,17 32,16 48,17 64,15 80,14 100,13", color:"#34d399" },
 ];
 
-// Elemanları yakala (varsa)
 const tabMarketBtn = document.getElementById('tab-market');
 const tabCryptoBtn = document.getElementById('tab-crypto');
 const badgeMarket  = document.getElementById('badge-market');
@@ -640,21 +729,16 @@ const badgeCrypto  = document.getElementById('badge-crypto');
 const viewMarket   = document.getElementById('view-market');
 const viewCrypto   = document.getElementById('view-crypto');
 
-// Sekme değiştir
 function setTabShowcase(which){
-  if(!viewMarket || !viewCrypto) return; // market route'u henüz yoksa
+  if(!viewMarket || !viewCrypto) return;
   const isMarket = which === 'market';
   viewMarket.classList.toggle('hide', !isMarket);
   viewCrypto.classList.toggle('hide',  isMarket);
   tabMarketBtn?.classList.toggle('active', isMarket);
   tabCryptoBtn?.classList.toggle('active', !isMarket);
   badgeMarket?.classList.toggle('active', isMarket);
-  if(badgeCrypto){
-    badgeCrypto.style.opacity = isMarket ? '.8' : '1';
-  }
+  if(badgeCrypto) badgeCrypto.style.opacity = isMarket ? '.8' : '1';
 }
-
-// Market kartlarını üret (vitrin)
 function renderMarketCards(){
   if(!viewMarket) return;
   const html = SHOWCASE_PRODUCTS.map(p => `
@@ -672,8 +756,6 @@ function renderMarketCards(){
   `).join('');
   viewMarket.innerHTML = html;
 }
-
-// Kripto kartlarını üret (vitrin)
 function renderCryptoCards(){
   if(!viewCrypto) return;
   const html = SHOWCASE_TOKENS.map(t => `
@@ -702,8 +784,6 @@ function renderCryptoCards(){
   `).join('');
   viewCrypto.innerHTML = html;
 }
-
-// Event bağla (varsa butonlar)
 if(tabMarketBtn){
   ['click'].forEach(ev=>{
     tabMarketBtn.addEventListener(ev, () => setTabShowcase('market'));
@@ -712,10 +792,3 @@ if(tabMarketBtn){
     badgeCrypto?.addEventListener(ev, () => setTabShowcase('crypto'));
   });
 }
-
-// Dış JSON'dan beslemek istersen:
-/*
-fetch('data/products.json')
-  .then(r => r.json())
-  .then(list => { SHOWCASE_PRODUCTS.splice(0, SHOWCASE_PRODUCTS.length, ...list); renderMarketCards(); });
-*/

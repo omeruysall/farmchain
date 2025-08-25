@@ -1,87 +1,294 @@
 <!DOCTYPE html>
 <html lang="tr">
 <head>
-  <meta charset="UTF-8" />
+  <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>FarmChain — Oyun</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
   <style>
-    body{margin:0;background:#0a0d18;color:#e9eef3;font-family:"Inter",system-ui}
-    header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.14)}
-    .btn{padding:.45rem .7rem;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
+    :root{ --ink:#e9eef3; --muted:#a8b1c4; --border:rgba(255,255,255,.14); --bg:#0a0d18; }
+    *{box-sizing:border-box}
+    body{margin:0;background:radial-gradient(1200px 600px at 50% -10%, #122033 0%, #0a0d18 60%);color:var(--ink);font:15px/1.6 "Inter",system-ui}
+    header.top{position:sticky;top:0;z-index:20;display:flex;justify-content:space-between;align-items:center;gap:10px;padding:14px 16px;background:rgba(10,13,24,.75);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+    main{max-width:1100px;margin:0 auto;padding:16px}
+    h1,h2,h3{margin:.2rem 0}
+    .row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+    .btn{padding:.5rem .8rem;border-radius:10px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
     .btn:hover{background:rgba(255,255,255,.12)}
-    .pill{padding:.35rem .6rem;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06)}
+    .pill{padding:.35rem .6rem;border:1px solid var(--border);border-radius:10px;background:rgba(255,255,255,.06)}
+    .card{border:1px solid var(--border);border-radius:14px;background:rgba(255,255,255,.05);padding:14px}
+    .grid{display:grid;gap:14px}
+    .grid-3{grid-template-columns:2fr 1fr 1fr}
+    @media (max-width:900px){.grid-3{grid-template-columns:1fr}}
+    table{width:100%;border-collapse:collapse;color:#dbe4f3}
+    th,td{padding:8px;border-bottom:1px solid rgba(255,255,255,.08)}
+    th{text-align:left}
+    .right{text-align:right}
+    .muted{color:var(--muted)}
+    .hide{display:none !important}
+    /* modal */
+    #siloModal{position:fixed;inset:0;background:rgba(0,0,0,.55);display:none;place-items:center;z-index:50}
+    #siloModal .card{width:min(900px,95vw);max-height:85vh;overflow:auto}
   </style>
 </head>
 <body>
-<header>
-  <h2 style="margin:0">🌱 Çiftliğin</h2>
-  <div style="display:flex;gap:8px;align-items:center">
-    <span id="balance" class="pill">💰 0 FC</span>
-    <!-- ✅ GEÇİŞ BUTONU: Başta gizli -->
-    <button id="btnToggleView" class="btn" style="display:none">↔ Admin / Oyun</button>
-    <button id="btnLogout" class="btn">Çıkış</button>
+  <header class="top">
+    <div class="row">
+      <div class="pill" style="letter-spacing:.15em;color:#bfffe6">FARMCHAIN</div>
+      <strong id="farmTitle">Çiftliğin</strong>
+    </div>
+    <div class="row">
+      <span id="balance" class="pill">💰 0 FC</span>
+      <!-- ↔ Admin/Oyun GEÇİŞ BUTONU (yalnızca adminlerde görünür) -->
+      <button id="btnToggleView" class="btn" style="display:none">↔ Admin / Oyun</button>
+      <button id="btnLogout" class="btn">Çıkış</button>
+    </div>
+  </header>
+
+  <!-- SİLO ÖZET SATIRI -->
+  <div id="siloBar" class="card" style="margin:12px auto 0;max-width:1100px">
+    <div class="row">
+      <strong>🏚️ Silo</strong>
+      <span id="siloCap" class="pill">— / —</span>
+      <span id="siloLevel" class="pill">Seviye 1</span>
+      <button id="btnOpenSilo" class="btn" type="button">Silo’yu Aç</button>
+      <button id="btnUpgradeSilo" class="btn" type="button">Yükselt</button>
+      <span id="siloUpgradeInfo" class="muted">Ücret: — FC</span>
+    </div>
   </div>
-</header>
 
-<main style="padding:16px">
-  <h3 id="farmTitle">Hoşgeldin!</h3>
-  <p>Burası oyuncu ekranı (demo).</p>
-</main>
+  <main>
+    <h2>Hoşgeldin!</h2>
 
-<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-<script>
-  // 👉 Supabase bilgilerinizi girin
-  const supa = supabase.createClient("https://gukdmxepdgwrwniectnq.supabase.co", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU");
+    <div class="grid grid-3">
+      <!-- Tarlalar -->
+      <section class="card">
+        <h3>Tarlalar</h3>
+        <div class="grid" style="grid-template-columns:repeat(2,1fr);gap:12px">
+          <div class="card"><div class="muted">Boş Tarla #1</div><button class="btn" id="p1">Ekim Yap</button></div>
+          <div class="card"><div class="muted">Boş Tarla #2</div><button class="btn" id="p2">Ekim Yap</button></div>
+          <div class="card"><div class="muted">Boş Tarla #3</div><button class="btn" id="p3">Ekim Yap</button></div>
+          <div class="card"><div class="muted">Boş Tarla #4</div><button class="btn" id="p4">Ekim Yap</button></div>
+        </div>
+        <div class="muted" id="status" style="margin-top:10px">Bir tarlaya “Ekim Yap” ile tohum ek, süre dolunca “Hasat”.</div>
+      </section>
 
-  let currentUser = null;
+      <!-- Envanter -->
+      <section class="card">
+        <h3>Envanter</h3>
+        <div class="row" style="margin-bottom:8px">
+          <button id="btnAddSeed" class="btn">+ Tohum Ekle</button>
+          <button id="btnPlantDemo" class="btn">🌾 Ekim (10sn demo)</button>
+        </div>
+        <table>
+          <thead><tr><th>Ürün</th><th class="right">Miktar</th></tr></thead>
+          <tbody id="invBody"></tbody>
+        </table>
+      </section>
 
-  document.addEventListener('DOMContentLoaded', init);
+      <!-- Hızlı İşlemler / Tutorial -->
+      <section class="card">
+        <h3>Hızlı İşlemler</h3>
+        <div class="muted">Market/kripto akışları diğer sayfalarda.</div>
+        <div class="card" style="margin-top:12px">
+          <strong>🎯 Tutorial</strong>
+          <div id="tutorialStep" class="muted" style="margin-top:6px">Adım 1: “+ Tohum Ekle”.</div>
+          <div class="row" style="margin-top:8px">
+            <button id="tutNext" class="btn">Devam</button>
+            <button id="tutHide" class="btn">Gizle</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
 
-  async function init(){
-    const { data:{ user } } = await supa.auth.getUser();
-    if(!user){ location.href="index.html"; return; }
-    currentUser = user;
+  <!-- SİLO MODAL -->
+  <div id="siloModal">
+    <div class="card">
+      <div class="row" style="justify-content:space-between">
+        <h3 style="margin:.2rem 0">🏚️ Silo İçeriği</h3>
+        <button class="btn" id="btnCloseSilo" type="button">Kapat</button>
+      </div>
+      <div class="muted" style="margin-bottom:8px">Ürünler kategorilere göre listelenir.</div>
+      <div id="siloTabs" class="row" style="margin-bottom:8px">
+        <button class="btn" data-cat="hepsi">Hepsi</button>
+        <button class="btn" data-cat="bitkisel">Bitkisel</button>
+        <button class="btn" data-cat="yem">Yemler</button>
+        <button class="btn" data-cat="hayvansal">Hayvansal</button>
+        <button class="btn" data-cat="süt">Süt</button>
+        <button class="btn" data-cat="genel">Genel</button>
+      </div>
+      <table>
+        <thead><tr><th>Ürün</th><th>Kategori</th><th class="right">Miktar</th></tr></thead>
+        <tbody id="siloBody"></tbody>
+      </table>
+    </div>
+  </div>
 
-    // Örnek: başlığa çiftlik adını getirebilirsiniz (varsa)
-    try{
-      const { data:f } = await supa.from('farms').select('farm_name').eq('user_id', user.id).maybeSingle();
-      if(f?.farm_name) document.getElementById('farmTitle').textContent = `Hoşgeldin ${f.farm_name}!`;
-    }catch(e){}
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script>
+    // 🔧 Supabase
+    const supa = supabase.createClient("https://gukdmxepdgwrwniectnq.supabase.co","eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd1a2RteGVwZGd3cnduaWVjdG5xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTU4NzgyODAsImV4cCI6MjA3MTQ1NDI4MH0.57j4LbCHdhoaYl05PBTRjNyQAV3SxvL07GUredTDWZU");
 
-    await showAdminToggleIfAny();
+    // Kısayollar
+    const $  = sel => document.querySelector(sel);
+    const $$ = sel => Array.from(document.querySelectorAll(sel));
 
-    document.getElementById('btnLogout').onclick = logout;
-  }
+    let currentUser=null;
+    let silo = { level:1, capacity:20 };
+    const CATS = { bugday:'bitkisel', tohum:'bitkisel' };
 
-  // ✅ Admin ise butonu göster ve admin.html'e götür
-  async function showAdminToggleIfAny(){
-    try{
-      const { data, error } = await supa
-        .from('user_roles')
-        .select('role')
-        .eq('user_id', currentUser.id)
-        .eq('role','admin')
-        .maybeSingle();
+    document.addEventListener('DOMContentLoaded', init);
 
-      const btn = document.getElementById('btnToggleView');
-      if(!btn) return;
+    async function init(){
+      const { data:{ user } } = await supa.auth.getUser();
+      if(!user){ location.href="index.html"; return; }
+      currentUser = user;
 
-      if(!error && data){
-        btn.style.display = 'inline-block';
-        btn.onclick = () => location.href = 'admin.html';
-      }else{
-        btn.style.display = 'none';
-      }
-    }catch(e){
-      console.warn(e);
+      // Çiftlik adı
+      const farm = await supa.from('farms').select('farm_name').eq('user_id', user.id).maybeSingle();
+      if(farm.data?.farm_name) $('#farmTitle').textContent = farm.data.farm_name;
+
+      // Yüklemeler
+      await loadWalletAndInv(user.id);
+      await loadSilo(user.id);
+      await showAdminToggleIfAny();
+
+      // Butonlar
+      $('#btnLogout').onclick = logout;
+      $('#btnOpenSilo').onclick = openSilo;
+      $('#btnCloseSilo').onclick = closeSilo;
+      $('#btnUpgradeSilo').onclick = upgradeSilo;
+      $$('#siloTabs .btn').forEach(b => b.addEventListener('click', ()=> renderSiloList(b.dataset.cat)));
+
+      $('#btnAddSeed').onclick = async ()=>{
+        const ok = await addItemWithCap('tohum',1);
+        if(ok){ $('#status').textContent='1 tohum eklendi.'; }
+      };
+      $('#btnPlantDemo').onclick = ()=> plantDemo();
+
+      // Tarla butonları örnek
+      ['#p1','#p2','#p3','#p4'].forEach(sel=>{
+        const el=$(sel); if(el) el.onclick = ()=> plantDemo();
+      });
     }
-  }
 
-  async function logout(){
-    await supa.auth.signOut();
-    location.href = "index.html";
-  }
-</script>
+    // ---------- Auth ----------
+    async function logout(){ await supa.auth.signOut(); location.href='index.html'; }
+
+    // ---------- Admin toggle ----------
+    async function showAdminToggleIfAny(){
+      const { data } = await supa.from('user_roles')
+        .select('role').eq('user_id', currentUser.id).eq('role','admin').maybeSingle();
+      const btn = $('#btnToggleView');
+      if(data){ btn.style.display='inline-block'; btn.onclick=()=>location.href='admin.html'; }
+      else { btn.style.display='none'; }
+    }
+
+    // ---------- Cüzdan & Envanter ----------
+    async function loadWalletAndInv(uid){
+      const w = await supa.from('wallets').select('balance').eq('user_id', uid).maybeSingle();
+      $('#balance').textContent = `💰 ${Number(w.data?.balance ?? 0)} FC`;
+
+      const inv = await supa.from('inventory').select('item_name, amount').eq('user_id', uid).order('item_name');
+      const body = $('#invBody'); body.innerHTML='';
+      (inv.data||[]).forEach(r=>{
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${r.item_name}</td><td class="right">${r.amount}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    // Envanter ekleme (upsert)
+    async function addItem(name, amount){
+      const cur = await supa.from('inventory').select('amount').eq('user_id', currentUser.id).eq('item_name', name).maybeSingle();
+      if(cur.data){
+        await supa.from('inventory').update({ amount:(cur.data.amount||0)+amount }).eq('user_id', currentUser.id).eq('item_name', name);
+      }else{
+        await supa.from('inventory').insert({ user_id: currentUser.id, item_name:name, amount, category:CATS[name]||'genel' });
+      }
+      await loadWalletAndInv(currentUser.id);
+    }
+
+    // ---------- Silo ----------
+    async function loadSilo(uid){
+      let { data } = await supa.from('silos').select('level,capacity').eq('user_id', uid).maybeSingle();
+      if(!data){
+        await supa.from('silos').insert({ user_id: uid, level:1, capacity:20 });
+        await addItem('tohum',1); // hediye
+        silo = { level:1, capacity:20 };
+      }else{ silo = data; }
+      updateSiloBar();
+    }
+
+    function siloUpgradeCost(){ return silo.level * 25; }
+    function nextCapacity(){ return 20 + silo.level*10; }
+
+    async function getTotalItems(){
+      const { data } = await supa.from('inventory').select('amount').eq('user_id', currentUser.id);
+      return (data||[]).reduce((a,b)=> a + (b.amount||0), 0);
+    }
+
+    async function changeBalance(delta){
+      const w = await supa.from('wallets').select('balance').eq('user_id', currentUser.id).maybeSingle();
+      const bal = Number(w.data?.balance||0);
+      if(bal + delta < 0) return false;
+      await supa.from('wallets').update({ balance: bal + delta }).eq('user_id', currentUser.id);
+      $('#balance').textContent = `💰 ${bal + delta} FC`;
+      return true;
+    }
+
+    function updateSiloBar(){
+      getTotalItems().then(used=>{
+        $('#siloCap').textContent   = `${used} / ${silo.capacity}`;
+        $('#siloLevel').textContent = `Seviye ${silo.level}`;
+        $('#siloUpgradeInfo').textContent = `Ücret: ${siloUpgradeCost()} FC (Kap.: ${nextCapacity()})`;
+      });
+    }
+
+    async function upgradeSilo(){
+      const cost = siloUpgradeCost();
+      const ok = await changeBalance(-cost);
+      if(!ok){ alert('Bakiye yetersiz.'); return; }
+      silo.level += 1; silo.capacity = nextCapacity();
+      await supa.from('silos').update({ level:silo.level, capacity:silo.capacity }).eq('user_id', currentUser.id);
+      updateSiloBar();
+      alert('Silo yükseltildi! 🎉');
+    }
+
+    function openSilo(){ $('#siloModal').style.display='grid'; renderSiloList('hepsi'); }
+    function closeSilo(){ $('#siloModal').style.display='none'; }
+
+    async function renderSiloList(filterCat){
+      const { data } = await supa.from('inventory').select('item_name, amount, category').eq('user_id', currentUser.id).order('item_name');
+      const body = $('#siloBody'); body.innerHTML='';
+      (data||[]).forEach(r=>{
+        const cat = r.category && r.category!=='' ? r.category : (CATS[r.item_name]||'genel');
+        if(filterCat!=='hepsi' && filterCat && cat!==filterCat) return;
+        const tr=document.createElement('tr');
+        tr.innerHTML = `<td>${r.item_name}</td><td>${cat}</td><td class="right">${r.amount}</td>`;
+        body.appendChild(tr);
+      });
+    }
+
+    async function addItemWithCap(name, amount){
+      const used = await getTotalItems();
+      if(used + amount > silo.capacity){
+        alert('Silo kapasitesi dolu! Yükseltmeyi deneyin.');
+        return false;
+      }
+      await addItem(name, amount);
+      updateSiloBar();
+      return true;
+    }
+
+    // ---------- Ekim/Hasat demo ----------
+    async function plantDemo(){
+      $('#status').textContent='Ekim başladı… 10sn sonra hasat.';
+      await new Promise(r=>setTimeout(r,10000));
+      const ok = await addItemWithCap('bugday',1);
+      if(ok) $('#status').textContent='Hasat tamam! Envantere 1 buğday eklendi.';
+    }
+  </script>
 </body>
 </html>

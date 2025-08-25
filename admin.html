@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>FarmChain — Admin Paneli</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body{margin:0;background:#0a0d18;color:#e9eef3;font-family:"Inter",system-ui}
+    header{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid rgba(255,255,255,.14)}
+    .btn{padding:.45rem .7rem;border-radius:10px;border:1px solid rgba(255,255,255,.2);background:rgba(255,255,255,.06);color:#fff;cursor:pointer}
+    .btn:hover{background:rgba(255,255,255,.12)}
+    .pill{padding:.35rem .6rem;border-radius:10px;border:1px solid rgba(255,255,255,.15);background:rgba(255,255,255,.06)}
+    main{padding:16px}
+  </style>
+</head>
+<body>
+<header>
+  <h2 style="margin:0">⚙️ Admin Paneli</h2>
+  <div style="display:flex;gap:8px;align-items:center">
+    <!-- geri dönüş -->
+    <button class="btn" onclick="location.href='game.html'">↔ Oyun</button>
+    <button id="btnLogout" class="btn">Çıkış</button>
+  </div>
+</header>
+
+<main>
+  <h3>Yönetim Alanı</h3>
+  <p>Burada admin’e özel veriler listelenecek (çiftlikler, bakiyeler, silo seviyeleri vs.).</p>
+
+  <!-- Örnek admin yönetimi kartı -->
+  <div class="card" style="margin-top:14px;padding:10px;border:1px solid rgba(255,255,255,.2);border-radius:10px;background:rgba(255,255,255,.05)">
+    <strong>👑 Admin Yönetimi</strong>
+    <div style="margin-top:8px;display:flex;gap:8px;flex-wrap:wrap">
+      <input id="adminUserId" class="pill" placeholder="Kullanıcı user_id" style="min-width:260px">
+      <button id="btnMakeAdmin" class="btn">Admin Yap</button>
+      <button id="btnRemoveAdmin" class="btn">Admini Kaldır</button>
+    </div>
+  </div>
+</main>
+
+<script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+<script>
+  const supa = supabase.createClient("https://YOUR-PROJECT.supabase.co", "YOUR-ANON-KEY");
+  let currentUser = null;
+
+  document.addEventListener('DOMContentLoaded', init);
+
+  async function init(){
+    const { data:{ user } } = await supa.auth.getUser();
+    if(!user){ location.href="index.html"; return; }
+    currentUser = user;
+
+    // admin kontrol
+    const { data } = await supa.from('user_roles')
+      .select('role').eq('user_id', user.id).eq('role','admin').maybeSingle();
+    if(!data){ location.href="game.html"; return; }
+
+    document.getElementById('btnLogout').onclick = logout;
+
+    // admin yönetimi butonları
+    document.getElementById('btnMakeAdmin').onclick = ()=>{
+      const uid = document.getElementById('adminUserId').value.trim();
+      if(uid) makeAdmin(uid);
+    };
+    document.getElementById('btnRemoveAdmin').onclick = ()=>{
+      const uid = document.getElementById('adminUserId').value.trim();
+      if(uid) removeAdmin(uid);
+    };
+  }
+
+  async function logout(){
+    await supa.auth.signOut();
+    location.href="index.html";
+  }
+
+  // admin rolü verme
+  async function makeAdmin(uid){
+    const { error } = await supa.from('user_roles').insert({ user_id: uid, role:'admin' });
+    if(error){ alert("Hata: " + error.message); return; }
+    alert("Admin rolü verildi.");
+  }
+
+  // admin rolünü kaldırma
+  async function removeAdmin(uid){
+    const { error } = await supa.from('user_roles')
+      .delete().eq('user_id', uid).eq('role','admin');
+    if(error){ alert("Hata: " + error.message); return; }
+    alert("Admin rolü kaldırıldı.");
+  }
+</script>
+</body>
+</html>

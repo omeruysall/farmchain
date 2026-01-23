@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>BTC Puzzle Web Simulator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #0d1117;
+            color: #c9d1d9;
+            padding: 30px;
+        }
+
+        h1 {
+            color: #58a6ff;
+        }
+
+        .box {
+            background: #161b22;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 600px;
+        }
+
+        label {
+            display: block;
+            margin-top: 12px;
+        }
+
+        input, select, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 6px;
+            border-radius: 4px;
+            border: none;
+        }
+
+        input, select {
+            background: #0d1117;
+            color: #c9d1d9;
+            border: 1px solid #30363d;
+        }
+
+        button {
+            margin-top: 16px;
+            background: #238636;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #2ea043;
+        }
+
+        pre {
+            margin-top: 20px;
+            background: #010409;
+            padding: 15px;
+            border-radius: 6px;
+            overflow-x: auto;
+        }
+
+        .warn {
+            color: #f85149;
+            margin-bottom: 15px;
+        }
+
+        .info {
+            color: #8b949e;
+            font-size: 14px;
+        }
+    </style>
+</head>
+
+<body>
+
+<h1>🧩 Bitcoin Puzzle Web Simulator</h1>
+
+<div class="box">
+    <p class="warn">
+        ⚠️ Bu uygulama <b>eğitim ve simülasyon</b> amaçlıdır.  
+        Brute-force ile gerçek puzzle çözmek pratikte mümkün değildir.
+    </p>
+
+    <p class="info">
+        Hedef Adres:<br>
+        <b>{{ target }}</b>
+    </p>
+
+    <form id="scanForm">
+        <label>Başlangıç HEX</label>
+        <input name="start" value="400000000000000000">
+
+        <label>Bitiş HEX</label>
+        <input name="end" value="7fffffffffffffffff">
+
+        <label>Deneme Sayısı</label>
+        <input name="tries" value="5000">
+
+        <button type="submit">Taramayı Başlat</button>
+    </form>
+
+    <pre id="output">Hazır.</pre>
+</div>
+
+<script>
+document.getElementById("scanForm").addEventListener("submit", async function(e) {
+    e.preventDefault();
+
+    const output = document.getElementById("output");
+    output.textContent = "Taranıyor...";
+
+    const formData = new FormData(this);
+
+    try {
+        const res = await fetch("/scan", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await res.json();
+        output.textContent = JSON.stringify(data, null, 2);
+    } catch (err) {
+        output.textContent = "Hata: Backend çalışmıyor olabilir.";
+    }
+});
+</script>
+
+</body>
+</html>
